@@ -12,8 +12,33 @@
 [![video](https://img.shields.io/badge/video-YouTube-FF0000?logo=youtube&logoColor=white)](https://youtu.be/F1NCSWK26I8)
 [![githubpage](https://img.shields.io/badge/Website-DHPMapping-blue)](https://hutslib.github.io/DHP-Mapping/)
 
-# Update:
-30/06/2024 accepted by IROS2024!
+# Update
+**26/03/2024** arXiv version [paper](https://arxiv.org/abs/2403.16880)
 
-# TODO:
-[ ] release code
+**30/06/2024** accepted by IROS2024!
+
+## To Do
+
+The code is under cleaning and will be released gradually.
+
+- [x] initial repo & paper
+- [ ] dataset process & player & visualization
+- [ ] main algorithms code
+- [ ] visualization and other tools
+- [ ] improve docs 
+
+## Citation
+
+If you find this repo useful, please consider giving us a star 🌟 and citing our related paper.
+
+```bibtex
+@misc{hu2024dhpmapping,
+  title={DHP-Mapping: A Dense Panoptic Mapping System with Hierarchical World Representation and Label Optimization Techniques},
+  author={Tianshuai Hu and Jianhao Jiao and Yucheng Xu and Hongji Liu and Sheng Wang and Ming Liu},
+  year={2024},
+  eprint={2403.16880},
+  archivePrefix={arXiv},
+  primaryClass={cs.RO}
+}
+
+```
