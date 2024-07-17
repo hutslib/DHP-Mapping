@@ -16,4 +16,4 @@
 30/06/2024 accepted by IROS2024!
 
 # TODO:
-[] release code
+[ ] release code
