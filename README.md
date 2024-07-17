@@ -12,3 +12,8 @@
 [![video](https://img.shields.io/badge/video-YouTube-FF0000?logo=youtube&logoColor=white)](https://youtu.be/F1NCSWK26I8)
 [![githubpage](https://img.shields.io/badge/Website-DHPMapping-blue)](https://hutslib.github.io/DHP-Mapping/)
 
+# Update:
+30/06/2024 accepted by IROS2024!
+
+# TODO:
+[] release code
