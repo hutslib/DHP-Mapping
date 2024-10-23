@@ -1,0 +1,33 @@
+<launch>
+    <!-- ============ Arguments ============ -->
+      <arg name="base_path" default="/dataset/KITTI/04"/>
+      <arg name="play_rate" default="10"/>
+      <arg name="wait" default="false"/>
+      <arg name="namespace" default="data"/>
+      <arg name="use_detectron" default="false"/>
+      <arg name="use_kitti_label" default="true"/>
+      <arg name="max_frames" default="2000"/>
+      <arg name="global_frame_name" default="world"/>
+      <arg name="sensor_frame_name" default="velodyne"/>
+
+
+    <!-- ============ Play Data ============ -->
+       <node pkg="panoptic_mapping_utils" type="kitti_lidar_camera_player.py" name="kitti_lidar_camera_player" output="screen" >
+        <param name="data_path" value="$(arg base_path)" />
+        <param name="play_rate" value="$(arg play_rate)" />
+        <param name="use_detectron" value="$(arg use_detectron)" />
+        <param name="use_kitti_label" value="$(arg use_kitti_label)" />
+        <param name="global_frame_name" value="$(arg global_frame_name)" />
+        <param name="sensor_frame_name" value="$(arg sensor_frame_name)" />
+        <param name="wait" value="$(arg wait)" />
+        <param name="max_frames" value="$(arg max_frames)" />
+
+        <remap from="~color_image" to="$(arg namespace)/color_image" />
+        <remap from="~id_image" to="$(arg namespace)/segmentation_image" />
+        <remap from="~labels" to="$(arg namespace)/segmentation_labels" />
+        <remap from="~pose" to="$(arg namespace)/pose" />
+        <remap from="~lidar" to="$(arg namespace)/lidar" />
+        <remap from="~kitti_labels" to="$(arg namespace)/kitti_labels" />
+      </node>
+
+    </launch>
