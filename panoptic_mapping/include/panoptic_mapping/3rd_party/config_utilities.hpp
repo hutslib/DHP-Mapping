@@ -731,7 +731,7 @@ struct ConfigInternal : public ConfigInternalVerificator {
 
   /**
    * @brief This function combines printFields and fromRosParma to avoid code
-   * duplication. Implement this function by ading all setupParam functions.
+   * duplication. Implement this function by adding all setupParam functions.
    */
   virtual void setupParamsAndPrinting() {
     // If this is overridden this won't be set and will precede fromRosParam
@@ -1752,7 +1752,7 @@ class Factory {
   };
 
   /**
-   * @brief Query the factory to create a dervied type.
+   * @brief Query the factory to create a derived type.
    *
    * @tparam BaseT Type of the base class to query for.
    * @tparam Args Other constructor arguments. Notice that each unique set of
@@ -1798,7 +1798,7 @@ class Factory {
   }
 
   /**
-   * @brief Query the factory to create a dervied type from a param map.
+   * @brief Query the factory to create a derived type from a param map.
    *
    * @tparam BaseT Type of the base class to query for.
    * @tparam Args Other constructor arguments. Notice that each unique set of
@@ -2057,7 +2057,7 @@ class VariableConfig : public internal::VariableConfigInternal {
    * @brief Creation tool that acts like the RosFactory to create a DerivedT
    * based on the stored config.
    *
-   * @tparam Args Additional contructor arguments required for the BaseT.
+   * @tparam Args Additional constructor arguments required for the BaseT.
    */
   template <typename... Args>
   std::unique_ptr<BaseT> create(Args... args) const {
@@ -2075,7 +2075,7 @@ class VariableConfig : public internal::VariableConfigInternal {
   };
 
   // TODO(schmluk): This is an ugly hack but needs more refactoring of the
-  // factory system and naming to make this more clean and gerenal.
+  // factory system and naming to make this more clean and geneal.
   internal::ParamMap params_;
 };
 
@@ -2146,7 +2146,7 @@ ConfigT getConfigFromRos(const ros::NodeHandle& nh) {
 class FactoryRos : protected Factory {
  public:
   /**
-   * @brief Query the ROS-factory to create a dervied type with its config
+   * @brief Query the ROS-factory to create a derived type with its config
    * from a ROS nodehandle.
    *
    * @tparam BaseT Type of the base class to query for.

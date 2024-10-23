@@ -18,10 +18,10 @@
 #include "panoptic_mapping/map/classification/class_block.h"
 #include "panoptic_mapping/map/classification/class_layer.h"
 #include "panoptic_mapping/map/classification/class_voxel.h"
+#include "panoptic_mapping/map/instance_id.h"
 #include "panoptic_mapping/map/scores/score_block.h"
 #include "panoptic_mapping/map/scores/score_layer.h"
 #include "panoptic_mapping/map/scores/score_voxel.h"
-#include "panoptic_mapping/map/instance_id.h"
 #include "panoptic_mapping/map/submap_bounding_volume.h"
 #include "panoptic_mapping/map/submap_id.h"
 
@@ -227,9 +227,9 @@ class Submap {
    * @param tmp_byte_offset_ptr Byte offset result, used to keep track where we
    * are in the file if necessary. NOTE(schmluk): Mostly unused, initialize to
    * 0.
-   * @param id_manager Submap ID manager of the collection to laod the submap
+   * @param id_manager Submap ID manager of the collection to load the submap
    * into.
-   * @param instance_manager Instance ID manager of the collection to laod the
+   * @param instance_manager Instance ID manager of the collection to load the
    * submap into.
    * @return Unique pointer to the loaded submap.
    */

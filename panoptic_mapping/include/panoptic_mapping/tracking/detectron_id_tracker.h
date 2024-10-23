@@ -10,7 +10,7 @@ namespace panoptic_mapping {
 
 /**
  * This id tracker tries to match predictions of the detectron2 panoptic
- * semgentation (https://github.com/facebookresearch/detectron2) against the
+ * segmentation (https://github.com/facebookresearch/detectron2) against the
  * map for integration.
  */
 class DetectronIDTracker : public ProjectiveIDTracker {

@@ -1,35 +1,34 @@
 #!/usr/bin/env python3
 
-import os
-import json
 import csv
+import json
+import os
 
-import rospy
-from sensor_msgs.msg import Image
-from geometry_msgs.msg import PoseStamped
-from cv_bridge import CvBridge
 import cv2
-from PIL import Image as PilImage
 import numpy as np
+import rospy
 import tf
-
+from cv_bridge import CvBridge
+from geometry_msgs.msg import PoseStamped
+from PIL import Image as PilImage
+from sensor_msgs.msg import Image
 from std_srvs.srv import Empty, EmptyResponse
+
 from panoptic_mapping_msgs.msg import DetectronLabel, DetectronLabels
 
 
-class FlatDataPlayer(object):
+class FlatDataPlayer:
+
     def __init__(self):
-        """  Initialize ros node and read params """
+        """Initialize ros node and read params"""
         # params
-        self.data_path = rospy.get_param(
-            '~data_path', '/home/lukas/Documents/Datasets/flat_dataset/run1')
-        self.global_frame_name = rospy.get_param('~global_frame_name', 'world')
-        self.sensor_frame_name = rospy.get_param('~sensor_frame_name',
-                                                 "depth_cam")
-        self.use_detectron = rospy.get_param('~use_detectron', False)
-        self.play_rate = rospy.get_param('~play_rate', 1.0)
-        self.wait = rospy.get_param('~wait', False)
-        self.max_frames = rospy.get_param('~max_frames', 1e9)
+        self.data_path = rospy.get_param("~data_path", "/home/lukas/Documents/Datasets/flat_dataset/run1")
+        self.global_frame_name = rospy.get_param("~global_frame_name", "world")
+        self.sensor_frame_name = rospy.get_param("~sensor_frame_name", "depth_cam")
+        self.use_detectron = rospy.get_param("~use_detectron", False)
+        self.play_rate = rospy.get_param("~play_rate", 1.0)
+        self.wait = rospy.get_param("~wait", False)
+        self.max_frames = rospy.get_param("~max_frames", 1e9)
         self.refresh_rate = 100  # Hz
 
         # ROS
@@ -37,21 +36,19 @@ class FlatDataPlayer(object):
         self.depth_pub = rospy.Publisher("~depth_image", Image, queue_size=100)
         self.id_pub = rospy.Publisher("~id_image", Image, queue_size=100)
         if self.use_detectron:
-            self.label_pub = rospy.Publisher("~labels",
-                                             DetectronLabels,
-                                             queue_size=100)
+            self.label_pub = rospy.Publisher("~labels", DetectronLabels, queue_size=100)
         self.pose_pub = rospy.Publisher("~pose", PoseStamped, queue_size=100)
         self.tf_broadcaster = tf.TransformBroadcaster()
 
         # setup
         self.cv_bridge = CvBridge()
-        stamps_file = os.path.join(self.data_path, 'timestamps.csv')
+        stamps_file = os.path.join(self.data_path, "timestamps.csv")
         self.times = []
         self.ids = []
         self.current_index = 0  # Used to iterate through
         if not os.path.isfile(stamps_file):
             rospy.logfatal("No timestamp file '%s' found." % stamps_file)
-        with open(stamps_file, 'r') as read_obj:
+        with open(stamps_file) as read_obj:
             csv_reader = csv.reader(read_obj)
             for row in csv_reader:
                 if row[0] == "ImageID":
@@ -65,14 +62,13 @@ class FlatDataPlayer(object):
         self.start_time = None
 
         if self.wait:
-            self.start_srv = rospy.Service('~start', Empty, self.start)
+            self.start_srv = rospy.Service("~start", Empty, self.start)
         else:
             self.start(None)
 
     def start(self, _):
         self.running = True
-        self.timer = rospy.Timer(rospy.Duration(1.0 / self.refresh_rate),
-                                 self.callback)
+        self.timer = rospy.Timer(rospy.Duration(1.0 / self.refresh_rate), self.callback)
         return EmptyResponse()
 
     def callback(self, _):
@@ -135,16 +131,16 @@ class FlatDataPlayer(object):
             with open(labels_file) as json_file:
                 data = json.load(json_file)
                 for d in data:
-                    if 'instance_id' not in d:
-                        d['instance_id'] = 0
-                    if 'score' not in d:
-                        d['score'] = 0
+                    if "instance_id" not in d:
+                        d["instance_id"] = 0
+                    if "score" not in d:
+                        d["score"] = 0
                     label = DetectronLabel()
-                    label.id = d['id']
-                    label.instance_id = d['instance_id']
-                    label.is_thing = d['isthing']
-                    label.category_id = d['category_id']
-                    label.score = d['score']
+                    label.id = d["id"]
+                    label.instance_id = d["instance_id"]
+                    label.is_thing = d["isthing"]
+                    label.category_id = d["category_id"]
+                    label.score = d["score"]
                     label_msg.labels.append(label)
             self.label_pub.publish(label_msg)
 
@@ -157,15 +153,19 @@ class FlatDataPlayer(object):
 
         # Load and publish transform.
         if os.path.isfile(pose_file):
-            pose_data = [float(x) for x in open(pose_file, 'r').read().split()]
+            pose_data = [float(x) for x in open(pose_file).read().split()]  # noqa
             transform = np.eye(4)
             for row in range(4):
                 for col in range(4):
                     transform[row, col] = pose_data[row * 4 + col]
             rotation = tf.transformations.quaternion_from_matrix(transform)
             self.tf_broadcaster.sendTransform(
-                (transform[0, 3], transform[1, 3], transform[2, 3]), rotation,
-                now, self.sensor_frame_name, self.global_frame_name)
+                (transform[0, 3], transform[1, 3], transform[2, 3]),
+                rotation,
+                now,
+                self.sensor_frame_name,
+                self.global_frame_name,
+            )
         pose_msg = PoseStamped()
         pose_msg.header.stamp = now
         pose_msg.header.frame_id = self.global_frame_name
@@ -180,11 +180,10 @@ class FlatDataPlayer(object):
 
         self.current_index += 1
         if self.current_index > self.max_frames:
-            rospy.signal_shutdown("Played reached max frames (%i)" %
-                                  self.max_frames)
+            rospy.signal_shutdown("Played reached max frames (%i)" % self.max_frames)
 
 
-if __name__ == '__main__':
-    rospy.init_node('flat_data_player')
+if __name__ == "__main__":
+    rospy.init_node("flat_data_player")
     flat_data_player = FlatDataPlayer()
     rospy.spin()

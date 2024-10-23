@@ -65,7 +65,7 @@ class ClassBlock {
 };
 
 /**
- * @brief Implements all the interface fucntions to wrap a block of VoxelT
+ * @brief Implements all the interface functions to wrap a block of VoxelT
  * voxels.
  *
  * @tparam VoxelT Voxel type contained in the wrapped block. Needs to inherit

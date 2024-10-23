@@ -119,7 +119,7 @@ class InputData {
   const cv::Mat& validityImage() const { return validity_image_; }
   const cv::Mat& uncertaintyImage() const { return uncertainty_image_; }
 
-  // Access to modifyable data.
+  // Access to modifiable data.
   cv::Mat* idImagePtr() { return &id_image_; }
   cv::Mat* validityImagePtr() { return &validity_image_; }
 
@@ -138,10 +138,11 @@ class InputData {
   double timestamp_ = 0.0;         // Timestamp of the inputs.
 
   // Common Input data.
-  cv::Mat depth_image_;  // Float depth image (CV_32FC1).
-  cv::Mat color_image_;  // BGR (CV_8U).
-  cv::Mat id_image_;     // Mutable assigned ids as ints (CV_32SC1).
-  cv::Mat uncertainty_image_; // Float image containing uncertainty information (CV_32FC1)
+  cv::Mat depth_image_;        // Float depth image (CV_32FC1).
+  cv::Mat color_image_;        // BGR (CV_8U).
+  cv::Mat id_image_;           // Mutable assigned ids as ints (CV_32SC1).
+  cv::Mat uncertainty_image_;  // Float image containing uncertainty information
+                               // (CV_32FC1)
 
   // Common derived data.
   cv::Mat vertex_map_;      // XYZ points (CV32FC3), can be compute via camera.

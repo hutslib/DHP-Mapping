@@ -44,4 +44,3 @@
 - git:
     local-name: cblox
     uri: git@github.com:ethz-asl/cblox.git
-

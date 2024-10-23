@@ -101,7 +101,7 @@ visualization_msgs::Marker PlanningVisualizer::generateSliceMsg() {
   marker.points.reserve(x_steps * y_steps);
   marker.colors.reserve(x_steps * y_steps);
 
-  // If requested monitor querry time.
+  // If requested monitor query time.
   std::vector<float> times;
   if (config_.verbosity >= 3) {
     times.reserve(x_steps * y_steps);

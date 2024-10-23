@@ -1,10 +1,11 @@
+#!/bin/bash
 # Check target dir.
-if [ -z $FLAT_DATA_DIR ]; 
-then 
+if [ -z $FLAT_DATA_DIR ];
+then
   echo "The download destination 'FLAT_DATA_DIR' variable is not set.";
   exit 1
-else 
-  echo "Download to '$FLAT_DATA_DIR'?"; 
+else
+  echo "Download to '$FLAT_DATA_DIR'?";
   read -p "[Y/N]? " -n 1 -r
   if [[ ! $REPLY =~ ^[Yy]$ ]]
   then

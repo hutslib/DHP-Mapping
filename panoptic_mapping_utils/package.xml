@@ -3,7 +3,7 @@
   <name>panoptic_mapping_utils</name>
   <version>0.0.0</version>
   <description>Utilities to setup, run, and evaluate data for panoptic mapping. </description>
-  
+
   <author email="schmluk@mavt.ethz.ch">Lukas Schmid</author>
   <maintainer email="schmluk@mavt.ethz.ch">Lukas Schmid</maintainer>
 

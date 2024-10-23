@@ -75,7 +75,8 @@ void SingleTSDFTracker::parseDetectronClasses(InputData* input) {
 void SingleTSDFTracker::setup(SubmapCollection* submaps) {
   // Check if there is a loaded map.
   if (submaps->getActiveFreeSpaceSubmapID() >= 0) {
-    const Submap& map = submaps->getSubmap(submaps->getActiveFreeSpaceSubmapID());
+    const Submap& map =
+        submaps->getSubmap(submaps->getActiveFreeSpaceSubmapID());
     if (map.getConfig().voxel_size != config_.submap.voxel_size ||
         map.getConfig().voxels_per_side != config_.submap.voxels_per_side ||
         map.getConfig().truncation_distance !=

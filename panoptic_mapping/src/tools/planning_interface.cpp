@@ -17,7 +17,7 @@ PlanningInterface::PlanningInterface(
 bool PlanningInterface::isObserved(const Point& position,
                                    bool include_inactive_maps) const {
   Timer timer("planning_interface/is_observed");
-  // TODO(schmluk): Update this to latest convetions.
+  // TODO(schmluk): Update this to latest conventions.
   for (const Submap& submap : *submaps_) {
     if (include_inactive_maps || submap.isActive()) {
       const Point position_S = submap.getT_S_M() * position;

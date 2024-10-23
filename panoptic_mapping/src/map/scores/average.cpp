@@ -1,5 +1,6 @@
 #include "panoptic_mapping/map/scores/average.h"
 
+#include <memory>
 #include <vector>
 
 namespace panoptic_mapping {

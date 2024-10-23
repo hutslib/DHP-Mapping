@@ -24,7 +24,7 @@ namespace panoptic_mapping {
 // serialization still works!
 using ClassificationCount = uint16_t;
 
-// Wroking with voxblox maps.
+// Working with voxblox maps.
 using FloatingPoint = voxblox::FloatingPoint;
 using VoxelIndex = voxblox::VoxelIndex;
 using BlockIndex = voxblox::BlockIndex;
@@ -80,7 +80,7 @@ inline std::string changeStateToString(const ChangeState& state) {
     case ChangeState::kNew:
       return "New";
     case ChangeState::kMatched:
-      return "Mathced";
+      return "Matched";
     case ChangeState::kPersistent:
       return "Persistent";
     case ChangeState::kAbsent:

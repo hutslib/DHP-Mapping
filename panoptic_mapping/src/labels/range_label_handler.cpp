@@ -34,7 +34,8 @@ void RangeLabelHandler::initialiseLabels() {
     label.segmentation_id = i;
     label.class_id = i;
     label.label = PanopticLabel::kBackground;
-    label.color = voxblox::rainbowColorMap(((float)i) / config_.num_labels);
+    label.color =
+        voxblox::rainbowColorMap(static_cast<float>(i) / config_.num_labels);
     labels_[i] = std::make_unique<LabelEntry>(label);
   }
 }

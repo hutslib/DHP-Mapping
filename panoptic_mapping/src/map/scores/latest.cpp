@@ -1,7 +1,7 @@
 #include "panoptic_mapping/map/scores/latest.h"
 
+#include <memory>
 #include <vector>
-
 namespace panoptic_mapping {
 
 ScoreVoxelType LatestScoreVoxel::getVoxelType() const {

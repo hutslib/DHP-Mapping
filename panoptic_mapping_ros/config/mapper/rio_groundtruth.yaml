@@ -24,11 +24,11 @@ camera:
   fy: 240.667
   max_range: 5  # m
   min_range: 0.1
-  
+
 submap_allocator:
   type: semantic  # semantic
-  verbosity: 1   
-  
+  verbosity: 1
+
   # submaps
   voxels_per_side: &voxels_per_side 16
   truncation_distance: -2 # negative = #vs
@@ -38,35 +38,35 @@ submap_allocator:
     required_belonging_corners: 1
   classification:
     type: moving_binary_count
-  
+
   # Semantic
   small_instance_voxel_size: 0.02
   medium_instance_voxel_size: 0.03
   large_instance_voxel_size: 0.04
   background_voxel_size: 0.05
   unknown_voxel_size: 0.05
-  
+
 freespace_allocator:
   type: monolithic  # monolithic
-  verbosity: 1  
-  voxels_per_side: *voxels_per_side 
-  truncation_distance: -2   
+  verbosity: 1
+  voxels_per_side: *voxels_per_side
+  truncation_distance: -2
   voxel_size: 0.3
 
 id_tracker:
   type: projective # ground_truth, projective, detectron, single_tsdf
   verbosity: 1
-  
+
   # Projective ID tracker
   depth_tolerance: -1  # m, negative = #vs
   tracking_metric: IoU  # IoU, overlap
-  match_acceptance_threshold: 0.1  
+  match_acceptance_threshold: 0.1
   min_allocation_size: 2000 # px, for submap allocation.
-  use_class_data_for_matching: true  
+  use_class_data_for_matching: true
 
-tsdf_integrator:  
+tsdf_integrator:
   type: class_projective # projective, class_projective, single_tsdf
-  verbosity: 1     
+  verbosity: 1
 
   # Projective
   use_weight_dropoff: true
@@ -75,44 +75,44 @@ tsdf_integrator:
   foreign_rays_clear: true
   integration_threads: 8
   allocate_neighboring_blocks: true
-  
+
   # Class Projective
   use_binary_classification: true
   use_instance_classification: &use_instance_classification false
   update_only_tracked_submaps: true
-  
+
 map_management:
   type: submaps
   verbosity: 4
-  
+
   # Frequencies
-  prune_active_blocks_frequency: 1 
+  prune_active_blocks_frequency: 1
   activity_management_frequency: 1
   change_detection_frequency: 5
-  
+
   # Behavior
   merge_deactivated_submaps_if_possible: true
   apply_class_layer_when_deactivating_submaps: false
-  
+
   activity_manager:
     required_reobservations: 5 # Consecutive observations to keep new submaps.
     deactivate_after_missed_detections: 5  # Deactivate submaps when not observed for x frames.
-  
+
   tsdf_registrator:
     verbosity: 3
     min_voxel_weight: 0.000001
     error_threshold: -1 # m, negative = #vs
-    match_rejection_points: 20  
+    match_rejection_points: 20
     match_rejection_percentage: 0.02
     match_acceptance_points: 20
     match_acceptance_percentage: 0.02
     normalize_by_voxel_weight: true
-    
+
   layer_manipulator:
       verbosity: 3
       use_instance_classification: *use_instance_classification
-  
-visualization:  
+
+visualization:
   submaps:
     type: submaps  # submaps, single_tsdf
     verbosity: 1
@@ -125,13 +125,13 @@ visualization:
     visualize_bounding_volumes: true
     include_free_space: false
     mesh_min_weight: 0.000001
-  
+
   planning:
     verbosity: 1
     visualize_slice: true
     slice_resolution: 0.1
     slice_height: -0.5
-  
+
   tracking:
     verbosity: 1
     visualize_tracking: true

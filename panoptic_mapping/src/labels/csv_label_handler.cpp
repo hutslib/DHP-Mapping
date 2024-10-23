@@ -84,7 +84,7 @@ void CsvLabelHandler::readLabelsFromFile() {
     labels_[inst] = std::make_unique<LabelEntry>(label);
   }
 
-  // Cehck all labels valid.
+  // Check all labels valid.
   if (missed_count) {
     LOG(ERROR)
         << missed_count

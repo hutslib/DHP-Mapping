@@ -1,8 +1,9 @@
 #include "panoptic_mapping/map/classification/variable_count.h"
 
+#include <limits>
 #include <memory>
+#include <utility>
 #include <vector>
-
 namespace panoptic_mapping {
 
 ClassVoxelType VariableCountVoxel::getVoxelType() const {

@@ -12,7 +12,7 @@
 namespace panoptic_mapping {
 
 /**
- * @brief Classification by counting the occurences of each label. The index 0
+ * @brief Classification by counting the occurrences of each label. The index 0
  * is generally reserved for the belonging submap by shifting all IDs by 1. The
  * memory for counting is lazily allocated since often only surface voxels are
  * relevant.

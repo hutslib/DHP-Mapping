@@ -101,7 +101,7 @@ bool SubmapCollection::saveToFile(const std::string& file_path) const {
   // Check for proper extensions.
   const std::string file_name = checkMapFileExtension(file_path);
 
-  // Open the ouput file.
+  // Open the output file.
   std::fstream outfile;
   outfile.open(file_name, std::fstream::out | std::fstream::binary);
   if (!outfile.is_open()) {

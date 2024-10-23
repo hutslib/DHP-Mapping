@@ -35,7 +35,7 @@
 - git:
     local-name: catkin_grpc
     uri: https://github.com/CogRob/catkin_grpc.git
-    
+
 # Package Dependencies. Notice that voxblox requires a special branch.
 - git:
     local-name: voxblox
@@ -44,4 +44,3 @@
 - git:
     local-name: cblox
     uri: https://github.com/ethz-asl/cblox.git
-

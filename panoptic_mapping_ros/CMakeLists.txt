@@ -35,4 +35,3 @@ target_link_libraries(panoptic_mapper_node ${PROJECT_NAME})
 
 cs_install()
 cs_export()
-

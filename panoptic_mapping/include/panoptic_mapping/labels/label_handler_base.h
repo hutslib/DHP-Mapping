@@ -23,7 +23,7 @@ class LabelHandlerBase {
   // This returns true if the id was found.
   bool segmentationIdExists(int segmentation_id) const;
 
-  // These acessors assume that the segmentation_id exists.
+  // These accessors assume that the segmentation_id exists.
   int getClassID(int segmentation_id) const;
   bool isBackgroundClass(int segmentation_id) const;
   bool isInstanceClass(int segmentation_id) const;

@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include <cv_bridge/cv_bridge.h>
 #include <minkindr_conversions/kindr_tf.h>

@@ -111,7 +111,7 @@ void GroundTruthIDTracker::printAndResetWarnings() {
   }
   for (auto it : unknown_ids) {
     LOG(WARNING) << "Encountered " << it.second
-                 << " occurences of unknown segmentation ID '" << it.first
+                 << " occurrences of unknown segmentation ID '" << it.first
                  << "'.";
   }
   unknown_ids.clear();

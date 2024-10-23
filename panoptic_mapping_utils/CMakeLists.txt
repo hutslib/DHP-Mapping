@@ -34,4 +34,3 @@ target_link_libraries(multi_map_evaluation ${PROJECT_NAME})
 
 cs_install()
 cs_export()
-

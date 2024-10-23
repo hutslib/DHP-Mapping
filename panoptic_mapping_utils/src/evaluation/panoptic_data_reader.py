@@ -1,18 +1,19 @@
-import numpy as np
 import csv
 import os
 import warnings
 
+import numpy as np
+
 
 def read_panoptic_mapper_data_log(file_name):
-    """ A stored data log of the panoptic mapper and converts it into a
-    dictionary of numpy arrays if numeric or lists of strings otherwise. """
+    """A stored data log of the panoptic mapper and converts it into a
+    dictionary of numpy arrays if numeric or lists of strings otherwise."""
     result = {}
     if not os.path.isfile(file_name):
         warnings.warn("Target file '%s' does not exist." % file_name)
         return result
 
-    with open(file_name, newline='') as f:
+    with open(file_name, newline="") as f:
         reader = csv.reader(f)
         data = list(reader)
         for col in range(len(data[0])):
@@ -22,6 +23,6 @@ def read_panoptic_mapper_data_log(file_name):
                 values.append(data[row][col])
             try:
                 result[header] = np.array(values, dtype=float)
-            except:
+            except:  # noqa
                 result[header] = values
     return result

@@ -44,7 +44,7 @@ class InputDataUser {
   void addRequiredInput(InputData::InputType type);
 
   /**
-   * @brief Add mulitple input types to the set of required inputs. Duplicates
+   * @brief Add multiple input types to the set of required inputs. Duplicates
    * are automatically managed.
    *
    * @param types Inputs to add.
