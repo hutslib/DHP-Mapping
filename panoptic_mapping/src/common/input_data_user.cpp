@@ -50,4 +50,15 @@ void InputDataUser::setRequiredInputs(const InputData::InputTypes& types) {
   }
 }
 
+void InputDataUser::eraseRequiredInput(InputData::InputType type) {
+  required_inputs_.erase(type);
+  // for debug information print the inputtype
+  InputData::InputTypes::iterator itr;
+  for (itr = required_inputs_.begin(); itr != required_inputs_.end(); itr++) {
+    InputData::InputType this_type = (*itr);
+    std::string type_string = InputData::inputTypeToString(this_type);
+    std::cout << type_string << std::endl;
+  }
+}
+
 }  // namespace panoptic_mapping

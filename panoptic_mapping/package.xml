@@ -21,6 +21,8 @@
   <depend>gflags_catkin</depend>
   <depend>protobuf_catkin</depend>
   <depend>opencv3_catkin</depend>
+  <depend>pcl_ros</depend>
+  <depend>dense_crf</depend>
 
   <export>
   </export>

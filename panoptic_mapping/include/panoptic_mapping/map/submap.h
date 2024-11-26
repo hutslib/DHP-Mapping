@@ -24,7 +24,7 @@
 #include "panoptic_mapping/map/scores/score_voxel.h"
 #include "panoptic_mapping/map/submap_bounding_volume.h"
 #include "panoptic_mapping/map/submap_id.h"
-
+#include "panoptic_mapping/tools/text_colors.h"
 namespace panoptic_mapping {
 
 class LayerManipulator;
@@ -92,15 +92,41 @@ class Submap {
   const Transformation& getT_M_S() const { return T_M_S_; }
   const Transformation& getT_S_M() const { return T_M_S_inv_; }
   bool isActive() const { return is_active_; }
+  bool isInView() const { return is_in_view_; }
   bool wasTracked() const { return was_tracked_; }
   bool hasClassLayer() const { return has_class_layer_; }
   bool hasScoreLayer() const { return has_score_layer_; }
+  const std::string& getClassLayerType() const {
+    return config_.classification.type();
+  }
+  const std::string& getScoreLayerType() const { return config_.scores.type(); }
   const std::vector<IsoSurfacePoint>& getIsoSurfacePoints() const {
     return iso_surface_points_;
   }
   ChangeState getChangeState() const { return change_state_; }
   const SubmapBoundingVolume& getBoundingVolume() const {
     return bounding_volume_;
+  }
+  std::string toString() const {
+    std::stringstream ss;
+    ss << cyanText << "SubmapID:" << endColor << getID() << cyanText
+       << " ClassID:" << endColor << getClassID() << cyanText
+       << " InstanceID:" << endColor << getInstanceID() << cyanText
+       << " Label:" << endColor << panopticLabelToString(getLabel()) << cyanText
+       << " Name:" << endColor << getName() << cyanText
+       << " Classlayer:" << endColor << getClassLayerType() << cyanText
+       << " Active:" << endColor << isActive();
+    return ss.str();
+  }
+
+  std::string toStringNoCoutColoring() const {
+    std::stringstream ss;
+    ss << "SubmapID:" << getID() << " ClassID:" << getClassID()
+       << " InstanceID:" << getInstanceID()
+       << " Label:" << panopticLabelToString(getLabel())
+       << " Name:" << getName() << " Classlayer:" << getClassLayerType()
+       << " Active:" << isActive();
+    return ss.str();
   }
 
   // Modifying accessors.
@@ -123,7 +149,7 @@ class Submap {
   void setChangeState(ChangeState state) { change_state_ = state; }
   void setIsActive(bool is_active) { is_active_ = is_active; }
   void setWasTracked(bool was_tracked) { was_tracked_ = was_tracked; }
-
+  void setWasInView(bool is_in_view) { is_in_view_ = is_in_view; }
   // Processing.
   /**
    * @brief Set the submap status to inactive and update its status accordingly.
@@ -249,6 +275,7 @@ class Submap {
   // State.
   bool is_active_ = true;
   bool was_tracked_ = true;  // Set to true by the id tracker if matched.
+  bool is_in_view_ = true;
   bool has_class_layer_ = false;
   bool has_score_layer_ = false;
   ChangeState change_state_ = ChangeState::kNew;
@@ -268,6 +295,10 @@ class Submap {
 
   // Processing.
   std::unique_ptr<MeshIntegrator> mesh_integrator_;
+
+  // variable for the global integrator
+  bool integrator_setup_ = false;
+
 };
 
 }  // namespace panoptic_mapping

@@ -26,7 +26,9 @@ target_link_libraries(${PROJECT_NAME}_proto ${PROTOBUF_LIBRARIES})
 
 cs_add_library(${PROJECT_NAME}
         src/common/camera.cpp
+        src/common/points3d.cpp
         src/common/input_data_user.cpp
+        src/common/segment.cpp
         src/map/submap.cpp
         src/map/submap_collection.cpp
         src/map/submap_id.cpp
@@ -48,12 +50,15 @@ cs_add_library(${PROJECT_NAME}
         src/tracking/ground_truth_id_tracker.cpp
         src/tracking/projective_id_tracker.cpp
         src/tracking/detectron_id_tracker.cpp
+        src/tracking/submap_spatial_id_tracker.cpp
         src/submap_allocation/null_submap_allocator.cpp
         src/submap_allocation/semantic_submap_allocator.cpp
         src/submap_allocation/monolithic_freespace_allocator.cpp
         src/integration/projective_tsdf_integrator.cpp
         src/integration/class_projective_tsdf_integrator.cpp
         src/integration/single_tsdf_integrator.cpp
+        src/integration/global_voxblox_integrator.cpp
+        src/integration/raytracing_tsdf_integrator.cpp
         src/integration/projection_interpolators.cpp
         src/integration/mesh_integrator.cpp
         src/map_management/map_manager.cpp

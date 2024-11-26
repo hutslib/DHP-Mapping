@@ -42,11 +42,13 @@ void TsdfRegistrator::Config::setupParamsAndPrinting() {
   setupParam("normalize_by_voxel_weight", &normalize_by_voxel_weight);
   setupParam("normalization_max_weight", &normalization_max_weight);
   setupParam("integration_threads", &integration_threads);
+  setupParam("submap_color_discretization", &submap_color_discretization);
 }
 
 TsdfRegistrator::TsdfRegistrator(const Config& config)
     : config_(config.checkValid()) {
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" << config_.toString();
+  id_color_map_.setItemsPerRevolution(config_.submap_color_discretization);
 }
 
 void TsdfRegistrator::checkSubmapCollectionForChange(
@@ -125,6 +127,245 @@ std::string TsdfRegistrator::checkSubmapForChange(
     }
   }
   return "";
+}
+
+void TsdfRegistrator::computeCorners(Point corners[8], Point& origin,
+                                     FloatingPoint block_size) {
+  corners[0] = origin;
+  corners[1] = origin + Point(block_size, 0, 0);
+  corners[2] = origin + Point(0, block_size, 0);
+  corners[3] = origin + Point(block_size, block_size, 0);
+  corners[4] = origin + Point(0, 0, block_size);
+  corners[5] = origin + Point(block_size, 0, block_size);
+  corners[6] = origin + Point(0, block_size, block_size);
+  corners[7] = origin + Point(block_size, block_size, block_size);
+}
+
+void TsdfRegistrator::processVoxels(
+    const size_t start_voxel, const size_t end_voxel, TsdfBlock::Ptr tsdf_block,
+    ClassBlock::Ptr class_block, const Transformation& T_O_R, Submap* other,
+    int& merge_count, int& same_position_voxel_size,
+    const float& rejection_distance, bool& was_updated) {
+  for (size_t voxel_idx = start_voxel; voxel_idx < end_voxel; ++voxel_idx) {
+    TsdfVoxel& reference_voxel = tsdf_block->getVoxelByLinearIndex(voxel_idx);
+    ClassVoxel& reference_class_voxel =
+        class_block->getVoxelByLinearIndex(voxel_idx);
+    if (reference_voxel.weight >= 1e-6) {
+      // get the center point transfered to other submap coordinate and get
+      // the corresponding tsdf voxel and class voxel
+      const Point voxel_center =
+          T_O_R * tsdf_block->computeCoordinatesFromLinearIndex(voxel_idx);
+      TsdfBlock::Ptr other_block_ptr =
+          other->getTsdfLayerPtr()->getBlockPtrByCoordinates(voxel_center);
+      ClassBlock::Ptr other_class_ptr =
+          other->getClassLayerPtr()->getBlockPtrByCoordinates(voxel_center);
+      if (other_block_ptr) {
+        if (!other_class_ptr) {
+          LOG(ERROR) << "other block do not has class layer!" << std::endl;
+        } else {
+          TsdfVoxel& other_voxel =
+              other_block_ptr->getVoxelByCoordinates(voxel_center);
+          ClassVoxel& other_class_voxel =
+              other_class_ptr->getVoxelByCoordinates(voxel_center);
+          if (other_voxel.weight > 1e-6) {
+            LOG_IF(INFO, config_.verbosity >= 5) << "same position voxel";
+            {
+              std::unique_lock<std::mutex> lock(
+                  same_position_voxel_size_mutex_);
+              same_position_voxel_size++;
+            }
+            if (std::fabs(other_voxel.distance - reference_voxel.distance) <
+                rejection_distance) {
+              LOG_IF(INFO, config_.verbosity >= 5) << "merge voxel";
+              {
+                std::unique_lock<std::mutex> lock(was_updated_mutex_);
+                was_updated = true;
+              }
+              if (config_.verbosity >= 5) {
+                std::cout << "reference voxel class origin info: "
+                          << reference_class_voxel.printCount() << " semantic "
+                          << reference_class_voxel.printSemantic();
+                std::cout << "other voxel class origin info: "
+                          << other_class_voxel.printCount() << " semantic "
+                          << other_class_voxel.printSemantic();
+              }
+              voxblox::mergeVoxelAIntoVoxelB(reference_voxel, &other_voxel);
+              other_class_voxel.mergeVoxel(reference_class_voxel);
+              // clear classlayer voxel value
+              reference_class_voxel.clearCount();
+              // clear tsdflayer voxel value
+              reference_voxel = TsdfVoxel();
+              const int class_id = other_class_voxel.getClassId();
+              Color voxel_color = id_color_map_.colorLookup(class_id);
+              other_voxel.vis_color.r = voxel_color.r;
+              other_voxel.vis_color.b = voxel_color.b;
+              other_voxel.vis_color.g = voxel_color.g;
+              if (config_.verbosity >= 5) {
+                std::cout << "after merge reference voxel class info: "
+                          << reference_class_voxel.printCount() << " semantic "
+                          << reference_class_voxel.printSemantic();
+                std::cout << "after merge other voxel class info: "
+                          << other_class_voxel.printCount() << " semantic "
+                          << other_class_voxel.printSemantic();
+              }
+              {
+                std::unique_lock<std::mutex> lock(merge_count_mutex_);
+                merge_count++;
+              }
+              tsdf_block->setUpdatedAll();
+              other_block_ptr->setUpdatedAll();
+            }
+          } else {
+            // LOG(WARNING) << "check other voxel failed";
+          }
+        }
+      } else {
+        // LOG(WARNING) << "other do not has block with this position "
+        //              << std::endl;
+      }
+    }
+  }
+}
+
+void TsdfRegistrator::processBlocks(
+    const size_t start_block, const size_t end_block, Submap* reference,
+    Submap* other, const Transformation& T_O_R,
+    const voxblox::BlockIndexList& reference_all_block_indices,
+    int& merge_count, int& intersection_block_size,
+    int& same_position_voxel_size, const float& rejection_distance) {
+  for (size_t block_idx = start_block; block_idx < end_block; ++block_idx) {
+    const auto& block_index = reference_all_block_indices[block_idx];
+    ClassBlock::Ptr class_block;
+    TsdfBlock::Ptr tsdf_block;
+    if (reference->hasClassLayer()) {
+      if (reference->getClassLayer().hasBlock(block_index) &&
+          reference->getTsdfLayer().hasBlock(block_index)) {
+        class_block =
+            reference->getClassLayerPtr()->getBlockPtrByIndex(block_index);
+        tsdf_block =
+            reference->getTsdfLayerPtr()->getBlockPtrByIndex(block_index);
+      } else {
+        LOG(ERROR) << "error to find the block within the reference submap";
+      }
+    } else {
+      LOG(ERROR) << "reference submap do not has classlayer";
+    }
+
+    // track whether this submap block is updated
+    bool was_updated = false;
+
+    Point block_origin = tsdf_block->origin();
+    FloatingPoint block_size = reference->getTsdfLayer().block_size();
+    if (config_.verbosity >= 5) {
+      std::cout << "block size is : " << block_size << std::endl;
+    }
+    // get the eight corner of the block
+    voxblox::Point corners[8];
+    computeCorners(&corners[0], block_origin, block_size);
+
+    // Check if at least one corner is within the bounding volume of the other
+    // submap.
+    bool has_intersection = false;
+    for (int i = 0; i < 8; ++i) {
+      const voxblox::Point& corner = corners[i];
+      if (other->getBoundingVolume().contains_M(corner)) {
+        // If at least one corner is within the bounding volume, add the block
+        // index to the list.
+        has_intersection = true;
+        {
+          std::unique_lock<std::mutex> lock(intersection_block_size_mutex_);
+          intersection_block_size++;
+        }
+        break;  // Exit the loop early since we've found an intersection.
+      }
+    }
+
+    if (!has_intersection) {
+      // if this block is not within the other submap skip to check the inside
+      // voxels
+      continue;
+    }
+
+    const int voxel_indices =
+        std::pow(reference->getConfig().voxels_per_side, 3);
+
+    std::vector<std::future<void>> voxel_threads;
+    const size_t num_voxel_threads = std::thread::hardware_concurrency();
+    const size_t voxels_per_thread =
+        (voxel_indices + num_voxel_threads - 1) / num_voxel_threads;
+
+    for (size_t voxel_thread_index = 0; voxel_thread_index < num_voxel_threads;
+         ++voxel_thread_index) {
+      size_t start_voxel = voxel_thread_index * voxels_per_thread;
+      size_t end_voxel = std::min(start_voxel + voxels_per_thread,
+                                  static_cast<size_t>(voxel_indices));
+      voxel_threads.push_back(std::async(
+          std::launch::async,
+          [this, &tsdf_block, &class_block, &T_O_R, start_voxel, end_voxel,
+           other, &merge_count, &same_position_voxel_size, &rejection_distance,
+           &was_updated] {
+            processVoxels(start_voxel, end_voxel, tsdf_block, class_block,
+                          T_O_R, other, merge_count, same_position_voxel_size,
+                          rejection_distance, was_updated);
+          }));
+    }
+
+    // Wait for all voxel threads to finish
+    for (auto& voxel_thread : voxel_threads) {
+      voxel_thread.wait();
+    }
+  }
+}
+
+void TsdfRegistrator::samePositionMergeMultiThread(Submap* reference,
+                                                   Submap* other) {
+  LOG_IF(INFO, config_.verbosity >= 4) << "same Position Merge Multi Thread";
+  int reference_change_count = 0;
+  int other_change_count = 0;
+  int merge_count = 0;
+  int all_block_size = 0;
+  int intersection_block_size = 0;
+  int same_position_voxel_size = 0;
+  Transformation T_O_R = other->getT_S_M() * reference->getT_M_S();
+  voxblox::BlockIndexList reference_all_block_indices;
+  const float rejection_distance =
+      config_.error_threshold > 0.f
+          ? config_.error_threshold
+          : config_.error_threshold * -other->getTsdfLayer().voxel_size();
+  reference->getTsdfLayer().getAllAllocatedBlocks(&reference_all_block_indices);
+  all_block_size = reference_all_block_indices.size();
+  std::vector<std::future<void>> block_threads;
+  const size_t num_block_threads = std::thread::hardware_concurrency();
+  const size_t block_size = reference_all_block_indices.size();
+  const size_t blocks_per_thread =
+      (block_size + num_block_threads - 1) / num_block_threads;
+
+  for (size_t thread_index = 0; thread_index < num_block_threads;
+       ++thread_index) {
+    size_t start_block = thread_index * blocks_per_thread;
+    size_t end_block = std::min(start_block + blocks_per_thread, block_size);
+    block_threads.push_back(std::async(
+        std::launch::async,
+        [this, &reference, &other, &T_O_R, &reference_all_block_indices,
+         start_block, end_block, &merge_count, &intersection_block_size,
+         &same_position_voxel_size, &rejection_distance] {
+          processBlocks(start_block, end_block, reference, other, T_O_R,
+                        reference_all_block_indices, merge_count,
+                        intersection_block_size, same_position_voxel_size,
+                        rejection_distance);
+        }));
+  }
+
+  // Wait for all block threads to finish
+  for (auto& block_thread : block_threads) {
+    block_thread.wait();
+  }
+  LOG_IF(INFO, config_.verbosity >= 4)
+      << "reference submap : " << reference->getID()
+      << "all block size: " << all_block_size
+      << "other submap : " << other->getID() << " merge count: " << merge_count
+      << " intersection block size: " << intersection_block_size
+      << "same_position_voxel_size: " << same_position_voxel_size;
 }
 
 bool TsdfRegistrator::submapsConflict(const Submap& reference,

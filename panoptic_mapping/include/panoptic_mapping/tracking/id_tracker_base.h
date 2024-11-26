@@ -37,7 +37,7 @@ class IDTrackerBase : public InputDataUser {
    * @param input The input data to process.
    */
   virtual void processInput(SubmapCollection* submaps, InputData* input) = 0;
-
+  virtual std::vector<int> getInstanceList() = 0;
   // Setters for external setup.
   /**
    * @brief Sets a callback that is called whenever an image needs to be
@@ -49,6 +49,14 @@ class IDTrackerBase : public InputDataUser {
       std::function<void(const cv::Mat&, const std::string&)> callback) {
     visualization_callback_ = std::move(callback);
     visualize_ = true;
+  }
+
+  void setptCloudVisualizationCallback(
+      std::function<void(const pcl::PointCloud<pcl::PointXYZRGB>&,
+                         const std::string&)>
+          callback) {
+    pt_cloud_visualization_callback_ = std::move(callback);
+    pt_visualize_ = true;
   }
 
   /**
@@ -79,17 +87,27 @@ class IDTrackerBase : public InputDataUser {
   std::shared_ptr<FreespaceAllocatorBase> freespace_allocator_;
 
   // Visualization
-  bool visualizationIsOn() const { return visualize_; }
+  bool visualizationIsOn() const { return visualize_ && pt_visualize_; }
   void visualize(const cv::Mat& image, const std::string& name) {
     if (visualize_) {
       visualization_callback_(image, name);
     }
   }
+  void visualizeptCloud(const pcl::PointCloud<pcl::PointXYZRGB>& ptcloud_rbg,
+                        const std::string& name) {
+    if (pt_visualize_) {
+      pt_cloud_visualization_callback_(ptcloud_rbg, name);
+    }
+  }
 
  private:
   bool visualize_ = false;
+  bool pt_visualize_ = false;
   std::function<void(const cv::Mat&, const std::string&)>
       visualization_callback_;
+  std::function<void(const pcl::PointCloud<pcl::PointXYZRGB>&,
+                     const std::string&)>
+      pt_cloud_visualization_callback_;
 };
 
 }  // namespace panoptic_mapping

@@ -12,7 +12,7 @@ void MonolithicFreespaceAllocator::Config::checkParams() const {
 
 void MonolithicFreespaceAllocator::Config::setupParamsAndPrinting() {
   setupParam("verbosity", &verbosity);
-  setupParam("submap", &submap);
+  setupParam("submap", &submap, "submap");
 }
 
 MonolithicFreespaceAllocator::MonolithicFreespaceAllocator(const Config& config,

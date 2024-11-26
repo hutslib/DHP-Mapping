@@ -7,10 +7,11 @@
 #include <unordered_set>
 #include <vector>
 
+#include <voxblox/io/mesh_ply.h>
+
 #include "panoptic_mapping/3rd_party/config_utilities.hpp"
 #include "panoptic_mapping/common/common.h"
 #include "panoptic_mapping/map/submap.h"
-
 namespace panoptic_mapping {
 
 /***
@@ -43,6 +44,9 @@ class SubmapCollection {
    * @return True if the map was loaded successfully.
    */
   bool loadFromFile(const std::string& file_path, bool recompute_data = true);
+
+  bool saveMeshToFile(const std::string& file_path,
+                      std::vector<int>& suc_ids) const;
 
   // Modifying the collection.
   /**

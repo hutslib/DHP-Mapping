@@ -25,16 +25,81 @@ struct VariableCountVoxel : public ClassVoxel {
   float getBelongingProbability() const override;
   int getBelongingID() const override;
   float getProbability(const int id) const override;
+  float getSemanticProbability(const int id) const;
   void incrementCount(const int id, const float weight = 1.f) override;
+  void incrementSemanticCount(const int id, const float weight = 1.f) override;
   bool mergeVoxel(const ClassVoxel& other) override;
   std::vector<uint32_t> serializeVoxelToInt() const override;
   bool deseriliazeVoxelFromInt(const std::vector<uint32_t>& data,
                                size_t* data_index) override;
+  void getProbabilityCRFList(const std::set<int> id_list,
+                             VectorXf_1col* probability) override;
+  void getSemanticCRFList(int class_size, VectorXf_1col* probability,
+                          bool use_detectron) override;
+  void getSemanticCRFList(const std::set<int> class_list,
+                          VectorXf_1col* probability) override;
+  float getTotalCount() override { return total_count; }
+  float getSemanticTotalCount() override { return total_semantic_count; }
+  float getCurrentCount() override { return current_count; }
+  float getSemanticCurrentCount() override { return current_semantic_count; }
+  void setAfterMerge(float set_new_count) override {
+    current_index = 0;
+    counts[0] = set_new_count;
+  }
+  void setCount(int id, float set_new_count) override {
+    counts[id] = set_new_count;
+  }
+
+  void setSemanticCount(int id, float set_new_count) override {
+    semantic_records[id] = set_new_count;
+  }
+
+  void setAfterCrf(int new_current_id, float new_current_count,
+                   float new_total_count) override {
+    current_index = new_current_id;
+    current_count = new_current_count;
+    total_count = new_total_count;
+    if (new_current_id == 0) {
+      counts[0] = current_count;
+    }
+  }
+  void setSemanticAfterCrf(int new_semantic_class,
+                           float new_current_semantic_count,
+                           float new_total_semantic_count) override {
+    semantic_class = new_semantic_class;
+    current_semantic_count = new_current_semantic_count;
+    total_semantic_count = new_total_semantic_count;
+  }
+
+  void clearCount() override {
+    counts.clear();
+    semantic_records.clear();
+    current_index = 0;
+    semantic_class = -1;
+    current_count = 0;
+    total_count = 0;
+    current_semantic_count = 0;
+    total_semantic_count = 0;
+  }
+  int getClassId() const override;
+  std::vector<int> getSemanticIDVec() override {
+    std::vector<int> semantic_id_vec;
+    for (auto const& record : semantic_records) {
+      semantic_id_vec.push_back(record.first);
+    }
+    return semantic_id_vec;
+  }
+  std::string printCount() const override;
+  std::string printSemantic() const override;
   // Data.
-  std::unordered_map<int, ClassificationCount> counts;
+  std::unordered_map<int, FloatingPoint> counts;
+  std::unordered_map<int, FloatingPoint> semantic_records;
   int current_index = 0;
-  ClassificationCount current_count = 0;
-  ClassificationCount total_count = 0;
+  int semantic_class = -1;  // -1 for not set
+  FloatingPoint current_count = 0;
+  FloatingPoint total_count = 0;
+  FloatingPoint current_semantic_count = 0;
+  FloatingPoint total_semantic_count = 0;
 };
 
 class VariableCountLayer : public ClassLayerImpl<VariableCountVoxel> {

@@ -23,17 +23,19 @@ class LabelHandlerBase {
   // This returns true if the id was found.
   bool segmentationIdExists(int segmentation_id) const;
 
-  // These accessors assume that the segmentation_id exists.
+  // These acessors assume that the segmentation_id exists.
   int getClassID(int segmentation_id) const;
+  bool classIdExists(int class_id) const;
   bool isBackgroundClass(int segmentation_id) const;
   bool isInstanceClass(int segmentation_id) const;
   bool isUnknownClass(int segmentation_id) const;
   bool isSpaceClass(int segmentation_id) const;
   PanopticLabel getPanopticLabel(int segmentation_id) const;
   const voxblox::Color& getColor(int segmentation_id) const;
+  const voxblox::Color& getColorbyClass(int class_id) const;
   const std::string& getName(int segmentation_id) const;
   const LabelEntry& getLabelEntry(int segmentation_id) const;
-
+  const LabelEntry& getLabelEntrybyClass(int class_id) const;
   /**
    * @brief Get the LabelEntry if it exists in a combined lookup.
    *
@@ -46,6 +48,8 @@ class LabelHandlerBase {
 
   // Get the number of stored labels.
   size_t numberOfLabels() const;
+
+  void printLabels(const std::string& filename) const;
 
  protected:
   // List of the labels associated with each segmentation ID. Labels are stored

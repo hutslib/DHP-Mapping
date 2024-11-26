@@ -12,7 +12,7 @@
 namespace panoptic_mapping {
 
 /**
- * @brief Classification by counting the occurrences of each label. The index 0
+ * @brief Classification by counting the occurences of each label. The index 0
  * is generally reserved for the belonging submap by shifting all IDs by 1. The
  * memory for counting is lazily allocated since often only surface voxels are
  * relevant.
@@ -27,10 +27,41 @@ struct FixedCountVoxel : public ClassVoxel {
   int getBelongingID() const override;
   float getProbability(const int id) const override;
   void incrementCount(const int id, const float weight = 1.f) override;
+  void incrementSemanticCount(const int id,
+                              const float weight = 1.f) override{};
   bool mergeVoxel(const ClassVoxel& other) override;
   std::vector<uint32_t> serializeVoxelToInt() const override;
   bool deseriliazeVoxelFromInt(const std::vector<uint32_t>& data,
                                size_t* data_index) override;
+  void getProbabilityCRFList(const std::set<int> id_list,
+                             VectorXf_1col* probability) override{};
+  void getSemanticCRFList(int class_size, VectorXf_1col* probability,
+                          bool use_detectron) override{};
+  void getSemanticCRFList(const std::set<int> class_list,
+                          VectorXf_1col* probability) override {}
+  float getTotalCount() override { return 0; }
+  float getSemanticTotalCount() override {}
+  void setAfterMerge(float set_new_count) override{};
+  float getCurrentCount() override { return 0; }
+  float getSemanticCurrentCount() override {}
+  void setCount(int id, float set_new_count) override {}
+  void setSemanticCount(int id, float set_new_count) override {}
+  void setAfterCrf(int new_current_id, float new_current_count,
+                   float new_total_count) override {}
+  void setSemanticAfterCrf(int new_semantic_class,
+                           float new_current_semantic_count,
+                           float new_total_semantic_count) override {}
+  // void setCurrentCount(ClassificationCount new_current_count) override {}
+  // void setNewID(int id, ClassificationCount new_current_count,
+  //               ClassificationCount new_total_count) override {}
+  void clearCount() override {}
+  int getClassId() const override{};
+  std::vector<int> getSemanticIDVec() override {
+    std::vector<int> a;
+    return a;
+  }
+  std::string printCount() const override {}
+  std::string printSemantic() const override {}
   // Data.
   std::vector<ClassificationCount> counts;
   int current_index = 0;

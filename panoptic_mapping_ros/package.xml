@@ -2,10 +2,10 @@
 <package format="2">
   <name>panoptic_mapping_ros</name>
   <version>0.0.0</version>
-  <description>Panoptic mapping for long term scene understanding and consistency. </description>
+  <description>DHP-Mapping code repo. </description>
 
-  <author email="schmluk@mavt.ethz.ch">Lukas Schmid</author>
-  <maintainer email="schmluk@mavt.ethz.ch">Lukas Schmid</maintainer>
+  <author email="thuaj@connect.ust.hk">Tianshuai Hu</author>
+  <maintainer email="thuaj@connect.ust.hk">Tianshuai Hu</maintainer>
 
   <license>BSD</license>
 
@@ -30,9 +30,10 @@
   <depend>opencv3_catkin</depend>
   <depend>voxblox</depend>
   <depend>voxblox_ros</depend>
-
+  <depend>pcl_ros</depend>
   <depend>panoptic_mapping</depend>
   <depend>panoptic_mapping_msgs</depend>
+  <depend>dense_crf</depend>
 
   <export>
   </export>

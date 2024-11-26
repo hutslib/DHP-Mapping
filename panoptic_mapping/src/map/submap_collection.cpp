@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include <boost/filesystem.hpp>
+
 #include "panoptic_mapping/SubmapCollection.pb.h"
 
 namespace panoptic_mapping {
@@ -53,6 +55,10 @@ const Submap& SubmapCollection::getSubmap(int id) const {
 }
 
 Submap* SubmapCollection::getSubmapPtr(int id) {
+  auto it = id_to_index_.find(id);
+  if (it == id_to_index_.end()) {
+    LOG(FATAL) << "Tried to get inexistent submap " << id << ".";
+  }
   // This assumes we checked that the id exists.
   return submaps_[id_to_index_.at(id)].get();
 }
@@ -101,7 +107,7 @@ bool SubmapCollection::saveToFile(const std::string& file_path) const {
   // Check for proper extensions.
   const std::string file_name = checkMapFileExtension(file_path);
 
-  // Open the output file.
+  // Open the ouput file.
   std::fstream outfile;
   outfile.open(file_name, std::fstream::out | std::fstream::binary);
   if (!outfile.is_open()) {
@@ -205,6 +211,31 @@ std::string SubmapCollection::checkMapFileExtension(const std::string& file) {
     return file + extension;
   }
   return file;
+}
+
+bool SubmapCollection::saveMeshToFile(const std::string& folder_path,
+                                      std::vector<int>& suc_ids) const {
+  CHECK(!folder_path.empty());
+
+  if (!boost::filesystem::exists(folder_path.c_str())) {
+    if (!boost::filesystem::create_directory(folder_path.c_str())) return false;
+  }
+
+  // TODO(py): consider make it run with multi-thread to speed up
+  for (const Submap& submap : *this) {
+    std::string id_pad;
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(5) << submap.getID() << "_"
+        << submap.getName() << ".ply";
+    std::string file_path = folder_path + "/" + oss.str();
+    bool suc = voxblox::outputMeshLayerAsPly(file_path, submap.getMeshLayer());
+    std::cout << "save " << file_path << " " << suc << std::endl;
+    if (suc) {
+      suc_ids.push_back(submap.getID());
+    }
+  }
+
+  return true;
 }
 
 std::unique_ptr<SubmapCollection> SubmapCollection::clone() const {

@@ -4,6 +4,7 @@
 #include <string>
 
 #include <voxblox/interpolator/interpolator.h>
+#include <voxblox/utils/color_maps.h>
 
 #include "panoptic_mapping/3rd_party/config_utilities.hpp"
 #include "panoptic_mapping/common/common.h"
@@ -57,6 +58,8 @@ class TsdfRegistrator {
     // submap-parallel.
     int integration_threads = std::thread::hardware_concurrency();
 
+    int submap_color_discretization;
+
     Config() { setConfigName("TsdfRegistrator"); }
 
    protected:
@@ -74,9 +77,28 @@ class TsdfRegistrator {
   // Check whether there is significant difference between the two submaps.
   bool submapsConflict(const Submap& reference, const Submap& other,
                        bool* submaps_match = nullptr) const;
+  // merge the deactive submap voxel to the frozen ones if they has same
+  // position voxel and assign the voxel a new id based on the count id value
+  void processBlocks(const size_t start_block, const size_t end_block,
+                     Submap* reference, Submap* other,
+                     const Transformation& T_O_R,
+                     const voxblox::BlockIndexList& reference_all_block_indices,
+                     int& merge_count, int& intersection_block_size,
+                     int& same_position_voxel_size,
+                     const float& rejection_distance);
+  void processVoxels(const size_t start_voxel, const size_t end_voxel,
+                     TsdfBlock::Ptr tsdf_block, ClassBlock::Ptr class_block,
+                     const Transformation& T_O_R, Submap* other,
+                     int& merge_count, int& same_position_voxel_size,
+                     const float& rejection_distance, bool& was_updated);
+  void samePositionMergeMultiThread(Submap* reference, Submap* other);
+
+  void computeCorners(Point corners[8], Point& origin,
+                      FloatingPoint block_size);
 
  private:
   const Config config_;
+  voxblox::ExponentialOffsetIdColorMap id_color_map_;
 
   // Methods.
   bool getDistanceAndWeightAtPoint(
@@ -89,6 +111,11 @@ class TsdfRegistrator {
   // For parallel change detection.
   std::string checkSubmapForChange(const SubmapCollection& submaps,
                                    Submap* submap) const;
+
+  std::mutex merge_count_mutex_;
+  std::mutex was_updated_mutex_;
+  std::mutex same_position_voxel_size_mutex_;
+  std::mutex intersection_block_size_mutex_;
 };
 
 }  // namespace panoptic_mapping

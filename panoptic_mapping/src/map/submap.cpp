@@ -40,6 +40,7 @@ void Submap::Config::setupParamsAndPrinting() {
   setupParam("truncation_distance", &truncation_distance);
   setupParam("voxels_per_side", &voxels_per_side);
   setupParam("classification", &classification, "classification");
+  // setupParam("instance_probs",instance_probs,"instance_probs");
   setupParam("scores", &scores, "scores");
   setupParam("mesh", &mesh, "mesh");
 }

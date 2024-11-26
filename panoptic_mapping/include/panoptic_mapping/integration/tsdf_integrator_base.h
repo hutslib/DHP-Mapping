@@ -6,12 +6,13 @@
 #include <vector>
 
 #include <opencv2/core/mat.hpp>
+#include <voxblox/integrator/integrator_utils.h>
+#include <voxblox/integrator/tsdf_integrator.h>
 
 #include "panoptic_mapping/common/common.h"
 #include "panoptic_mapping/common/globals.h"
 #include "panoptic_mapping/common/input_data_user.h"
 #include "panoptic_mapping/map/submap_collection.h"
-
 namespace panoptic_mapping {
 
 /**

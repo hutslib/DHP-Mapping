@@ -32,7 +32,7 @@ void ProjectiveIDTracker::Config::setupParamsAndPrinting() {
   setupParam("rendering_subsampling", &rendering_subsampling);
   setupParam("min_allocation_size", &min_allocation_size);
   setupParam("rendering_threads", &rendering_threads);
-  setupParam("renderer", &renderer);
+  setupParam("renderer", &renderer, "renderer");
 }
 
 ProjectiveIDTracker::ProjectiveIDTracker(const Config& config,
@@ -43,10 +43,11 @@ ProjectiveIDTracker::ProjectiveIDTracker(const Config& config,
       renderer_(config.renderer, globals_->camera()->getConfig(), false) {
   LOG_IF(INFO, config_.verbosity >= 1 && print_config) << "\n"
                                                        << config_.toString();
-  addRequiredInputs({InputData::InputType::kColorImage,
-                     InputData::InputType::kDepthImage,
-                     InputData::InputType::kSegmentationImage,
-                     InputData::InputType::kValidityImage});
+  addRequiredInputs(
+      {InputData::InputType::kRawImage, InputData::InputType::kLidarPoints,
+       InputData::InputType::kColorImage, InputData::InputType::kDepthImage,
+       InputData::InputType::kSegmentationImage,
+       InputData::InputType::kValidityImage});
 }
 
 void ProjectiveIDTracker::processInput(SubmapCollection* submaps,
@@ -234,7 +235,6 @@ bool ProjectiveIDTracker::classesMatch(int input_id, int submap_class_id) {
   }
   return globals_->labelHandler()->getClassID(input_id) == submap_class_id;
 }
-
 TrackingInfoAggregator ProjectiveIDTracker::computeTrackingData(
     SubmapCollection* submaps, InputData* input) {
   // Render each active submap in parallel to collect overlap statistics.

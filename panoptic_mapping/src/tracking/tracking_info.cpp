@@ -107,6 +107,15 @@ void TrackingInfoAggregator::insertInputImage(const cv::Mat& id_image,
   }
 }
 
+void TrackingInfoAggregator::insertInputPoints3d(const Labels& labels,
+                                                 const Pointcloud& points) {
+  for (int i = 0; i < points.size(); ++i) {
+    const Label k_label_i = labels[i];
+    incrementMap(&total_input_count_, k_label_i.id_label_);
+
+  }
+}
+
 std::vector<int> TrackingInfoAggregator::getInputIDs() const {
   // Get a vector containing all unique input ids.
   std::vector<int> result;
@@ -226,6 +235,29 @@ int TrackingInfoAggregator::getNumberOfOverlappingPixels(int input_id,
     return 0;
   }
   return it2->second;
+}
+
+void TrackingInfoAggregator::printTrackingInfo() const {
+  std::cout << redText << "overlap_:\n" << endColor;
+  for (const auto& input : overlap_) {
+    std::cout << "input_id: " << input.first << "\n";
+    for (const auto& submap : input.second) {
+      std::cout << "  submap_id: " << submap.first
+                << ", count: " << submap.second << "\n";
+    }
+  }
+
+  std::cout << redText << "total_rendered_count_:\n" << endColor;
+  for (const auto& rendered : total_rendered_count_) {
+    std::cout << "submap_id: " << rendered.first
+              << ", count: " << rendered.second << "\n";
+  }
+
+  std::cout << redText << "total_input_count_:\n" << endColor;
+  for (const auto& input : total_input_count_) {
+    std::cout << "input_id: " << input.first << ", count: " << input.second
+              << "\n";
+  }
 }
 
 }  // namespace panoptic_mapping

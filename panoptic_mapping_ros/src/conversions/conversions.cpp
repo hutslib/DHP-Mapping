@@ -22,4 +22,17 @@ DetectronLabels detectronLabelsFromMsg(
   return result;
 }
 
+KittiLabel kittiLabelFromMsg(const panoptic_mapping_msgs::KittiLabel& msg) {
+  KittiLabel result(msg.full_id);
+  return result;
+}
+
+KittiLabels kittiLabelsFromMsg(const panoptic_mapping_msgs::KittiLabels& msg) {
+  KittiLabels result;
+  for (const panoptic_mapping_msgs::KittiLabel& label : msg.labels) {
+    result.push_back(kittiLabelFromMsg(label));
+  }
+  return result;
+}
+
 }  // namespace panoptic_mapping

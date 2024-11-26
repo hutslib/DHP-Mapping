@@ -30,6 +30,7 @@ class DetectronIDTracker : public ProjectiveIDTracker {
   ~DetectronIDTracker() override = default;
 
   void processInput(SubmapCollection* submaps, InputData* input) override;
+  std::vector<int> getInstanceList() override {};
 
  protected:
   Submap* allocateSubmap(int input_id, SubmapCollection* submaps,

@@ -56,7 +56,11 @@ class ClassBlock {
   virtual ClassVoxel& getVoxelByLinearIndex(size_t index) = 0;
   virtual ClassVoxel& getVoxelByVoxelIndex(const VoxelIndex& index) = 0;
   virtual ClassVoxelType getVoxelType() const = 0;
-
+  virtual size_t num_voxels() const = 0;
+  virtual bool updated(voxblox::Update::Status status) const = 0;
+  virtual void setUpdatedAll() = 0;
+  virtual void setUpdated(voxblox::Update::Status status, bool value) = 0;
+  virtual void isValidVoxelIndex(const VoxelIndex& index) const = 0;
   // Additional checks for validity.
   operator bool() const { return isValid(); }
 
@@ -65,7 +69,7 @@ class ClassBlock {
 };
 
 /**
- * @brief Implements all the interface functions to wrap a block of VoxelT
+ * @brief Implements all the interface fucntions to wrap a block of VoxelT
  * voxels.
  *
  * @tparam VoxelT Voxel type contained in the wrapped block. Needs to inherit
@@ -108,10 +112,22 @@ class ClassBlockImpl : public ClassBlock {
     return reinterpret_cast<const ClassVoxel&>(block_->getVoxelByLinearIndex(0))
         .getVoxelType();
   }
+  size_t num_voxels() const override { return block_->num_voxels(); }
 
   // Exposes the actual block if the type is known.
   voxblox::Block<VoxelT>& getBlock() { return *block_; }
   const voxblox::Block<VoxelT>& getBlock() const { return *block_; }
+
+  bool updated(voxblox::Update::Status status) const {
+    return block_->updated(status);
+  }
+  void setUpdatedAll() { block_->setUpdatedAll(); }
+  void setUpdated(voxblox::Update::Status status, bool value) {
+    block_->setUpdated(status, value);
+  }
+  void isValidVoxelIndex(const VoxelIndex& index) const {
+    block_->isValidVoxelIndex(index);
+  }
 
  protected:
   const std::shared_ptr<voxblox::Block<VoxelT>> block_;

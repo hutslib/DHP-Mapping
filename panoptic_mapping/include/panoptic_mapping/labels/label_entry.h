@@ -8,7 +8,7 @@
 #include <voxblox/core/color.h>
 
 #include "panoptic_mapping/common/common.h"
-
+#include "panoptic_mapping/tools/text_colors.h"
 namespace panoptic_mapping {
 
 /**
@@ -32,11 +32,13 @@ struct LabelEntry {
   // Print the contents of the label.
   virtual std::string toString() const {
     std::stringstream ss;
-    ss << "SegmentationID: " << segmentation_id << ", ClassID: " << class_id
-       << ", PanopticID: " << panopticLabelToString(label)
-       << ", Color: " << static_cast<int>(color.r) << " "
-       << static_cast<int>(color.g) << " " << static_cast<int>(color.b)
-       << ", Name: " << name << ", Size: " << size;
+    ss << orangeText << "SegmentationID: " << endColor << segmentation_id
+       << orangeText << ", ClassID: " << endColor << class_id << orangeText
+       << ", PanopticID: " << endColor << panopticLabelToString(label)
+       << orangeText << ", Color: " << endColor << static_cast<int>(color.r)
+       << " " << static_cast<int>(color.g) << " " << static_cast<int>(color.b)
+       << orangeText << ", Name: " << endColor << name << orangeText
+       << ", Size: " << endColor << size;
     return ss.str();
   }
 

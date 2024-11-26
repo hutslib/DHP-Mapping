@@ -14,9 +14,9 @@ cs_add_library(${PROJECT_NAME}
         src/panoptic_mapper.cpp
         src/input/input_synchronizer.cpp
         src/visualization/submap_visualizer.cpp
-        src/visualization/single_tsdf_visualizer.cpp
         src/visualization/planning_visualizer.cpp
         src/visualization/tracking_visualizer.cpp
+        src/visualization/spatial_tracking_visualizer.cpp
         src/conversions/conversions.cpp
         )
 
@@ -35,3 +35,4 @@ target_link_libraries(panoptic_mapper_node ${PROJECT_NAME})
 
 cs_install()
 cs_export()
+

@@ -10,6 +10,7 @@ void MapRenderer::Config::checkParams() const {}
 void MapRenderer::Config::setupParamsAndPrinting() {
   setupParam("verbosity", &verbosity);
   setupParam("impaint_voxel_size", &impaint_voxel_size);
+  setupParam("submap_color_discretization", &submap_color_discretization);
 }
 
 MapRenderer::MapRenderer(const Config& config, const Camera::Config& camera,
@@ -20,6 +21,7 @@ MapRenderer::MapRenderer(const Config& config, const Camera::Config& camera,
 
   // Allocate range image.
   range_image_ = Eigen::MatrixXf(camera.height, camera.width);
+  id_color_map_.setItemsPerRevolution(config_.submap_color_discretization);
 }
 
 cv::Mat MapRenderer::render(const SubmapCollection& submaps,

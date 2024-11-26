@@ -33,6 +33,8 @@ class SubmapVisualizer {
     bool visualize_bounding_volumes = true;
     bool include_free_space = false;
     std::string ros_namespace;
+    std::string colormap_print_path;
+    int semantic_size = 0;
 
     Config() { setConfigName("SubmapVisualizer"); }
 
@@ -60,7 +62,13 @@ class SubmapVisualizer {
     kUncertainty,
     kEntropy,
     kPersistent,
-    kScore
+    kScore,
+    // for semantic tsdf visualizer
+    kProbIns, //for voxel instance 
+    kProbSem, // for voxel semantic 
+    kInstanceID, // for submap Instance ID
+    kSemanticID, // for submap Semantic ID
+    kSubmapID // for vis submap ID 
   };
   enum class VisualizationMode {
     kAll = 0,
@@ -154,6 +162,8 @@ class SubmapVisualizer {
   ros::Publisher mesh_pub_;
   ros::Publisher tsdf_blocks_pub_;
   ros::Publisher bounding_volume_pub_;
+
+  bool print_color_ = true;
 
  private:
   const Config config_;

@@ -68,7 +68,7 @@ class TrackingInfoAggregator {
   void insertInputImage(const cv::Mat& id_image, const cv::Mat& depth_image,
                         const Camera::Config& camera,
                         int rendering_subsampling);
-
+  void insertInputPoints3d(const Labels& labels, const Pointcloud& points);
   // Get results. Requires that all input data is already set.
   std::vector<int> getInputIDs() const;
   bool getHighestMetric(int input_id, int* submap_id, float* value,
@@ -80,6 +80,9 @@ class TrackingInfoAggregator {
   int getNumberOfInputPixels(int input_id) const;
   int getNumberOfSubmapPixels(int submap_id) const;
   int getNumberOfOverlappingPixels(int input_id, int submap_id) const;
+
+  // print content
+  void printTrackingInfo() const;
 
  private:
   std::function<float(int, int)> getComputeValueFunction(

@@ -1,5 +1,9 @@
 #include "panoptic_mapping_ros/panoptic_mapper.h"
 
+#include <unistd.h>
+
+#include <filesystem>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -7,11 +11,16 @@
 #include <utility>
 #include <vector>
 
+#include <cv_bridge/cv_bridge.h>
 #include <panoptic_mapping/common/camera.h>
+#include <panoptic_mapping/common/points3d.h>
 #include <panoptic_mapping/labels/label_handler_base.h>
 #include <panoptic_mapping/map/classification/fixed_count.h>
 #include <panoptic_mapping/submap_allocation/freespace_allocator_base.h>
 #include <panoptic_mapping/submap_allocation/submap_allocator_base.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/io/ply_io.h>
 
 namespace panoptic_mapping {
 
@@ -20,6 +29,7 @@ namespace panoptic_mapping {
 const std::map<std::string, std::pair<std::string, std::string>>
     PanopticMapper::default_names_and_types_ = {
         {"camera", {"camera", ""}},
+        {"points3d", {"points3d", ""}},
         {"label_handler", {"labels", "null"}},
         {"submap_allocator", {"submap_allocator", "null"}},
         {"freespace_allocator", {"freespace_allocator", "null"}},
@@ -27,14 +37,14 @@ const std::map<std::string, std::pair<std::string, std::string>>
         {"tsdf_integrator", {"tsdf_integrator", ""}},
         {"map_management", {"map_management", "null"}},
         {"vis_submaps", {"visualization/submaps", "submaps"}},
-        {"vis_tracking", {"visualization/tracking", ""}},
+        {"vis_tracking", {"visualization/tracking", "spatial"}},
         {"vis_planning", {"visualization/planning", ""}},
         {"data_writer", {"data_writer", "null"}}};
 
 void PanopticMapper::Config::checkParams() const {
   checkParamCond(!global_frame_name.empty(),
                  "'global_frame_name' may not be empty.");
-  checkParamGT(ros_spinner_threads, 1, "ros_spinner_threads");
+  checkParamGT(ros_spinner_threads, 1, "ros_spinnersourc_threads");
   checkParamGT(check_input_interval, 0.f, "check_input_interval");
 }
 
@@ -54,6 +64,17 @@ void PanopticMapper::Config::setupParamsAndPrinting() {
   setupParam("save_map_path_when_finished", &save_map_path_when_finished);
   setupParam("display_config_units", &display_config_units);
   setupParam("indicate_default_values", &indicate_default_values);
+  setupParam("label_info_print_path", &label_info_print_path);
+  setupParam("save_mesh_folder_path", &save_mesh_folder_path);
+  setupParam("colormap_print_path", &colormap_print_path);
+  setupParam("submap_info_path", &submap_info_path);
+  setupParam("vis_colorized_pointcloud", &vis_colorized_pointcloud);
+  setupParam("vis_colorized_pointcloud_save_folder",
+             &vis_colorized_pointcloud_save_folder);
+  setupParam("results_folder", &results_folder);
+  setupParam("generate_kimera_pointcloud", &generate_kimera_pointcloud);
+  setupParam("generate_gt_merged_ply", &generate_gt_merged_ply);
+  setupParam("merged_ply_file", &merged_ply_file);
 }
 
 PanopticMapper::PanopticMapper(const ros::NodeHandle& nh,
@@ -71,22 +92,29 @@ PanopticMapper::PanopticMapper(const ros::NodeHandle& nh,
   config_utilities::GlobalSettings().indicate_units =
       config_.display_config_units;
   LOG_IF(INFO, config_.verbosity >= 1) << "\n" << config_.toString();
-
   // Setup all components of the panoptic mapper.
   setupMembers();
   setupRos();
 }
 
 void PanopticMapper::setupMembers() {
+  // merged_cloud
+  merged_cloud_ptr = ColorLidarPointCloud::Ptr(new ColorLidarPointCloud);
   // Map.
   submaps_ = std::make_shared<SubmapCollection>();
 
   // Threadsafe wrapper for the map.
-  thread_safe_submaps_ = std::make_shared<ThreadSafeSubmapCollection>(submaps_);
+  // thread_safe_submaps_ =
+  // std::make_shared<ThreadSafeSubmapCollection>(submaps_);
 
   // Camera.
   auto camera = std::make_shared<Camera>(
       config_utilities::getConfigFromRos<Camera::Config>(defaultNh("camera")));
+
+  // Lidar
+  auto points3d = std::make_shared<Points3d>(
+      config_utilities::getConfigFromRos<Points3d::Config>(
+          defaultNh("points3d")));
 
   // Label Handler.
   std::shared_ptr<LabelHandlerBase> label_handler =
@@ -96,8 +124,12 @@ void PanopticMapper::setupMembers() {
   // Setup the number of labels.
   FixedCountVoxel::setNumCounts(label_handler->numberOfLabels());
 
+  if (config_.verbosity >= 3) {
+    label_handler->printLabels(config_.label_info_print_path);
+  }
+
   // Globals.
-  globals_ = std::make_shared<Globals>(camera, label_handler);
+  globals_ = std::make_shared<Globals>(camera, label_handler, points3d);
 
   // Submap Allocation.
   std::shared_ptr<SubmapAllocatorBase> submap_allocator =
@@ -114,13 +146,14 @@ void PanopticMapper::setupMembers() {
   id_tracker_->setFreespaceAllocator(freespace_allocator);
 
   // Tsdf Integrator.
+  std::unique_lock<std::mutex> label_lock(label_voxel_mutex_);
   tsdf_integrator_ = config_utilities::FactoryRos::create<TsdfIntegratorBase>(
       defaultNh("tsdf_integrator"), globals_);
+  label_lock.unlock();
 
   // Map Manager.
   map_manager_ = config_utilities::FactoryRos::create<MapManagerBase>(
       defaultNh("map_management"));
-
   // Visualization.
   ros::NodeHandle visualization_nh(nh_private_, "visualization");
 
@@ -130,8 +163,8 @@ void PanopticMapper::setupMembers() {
   submap_visualizer_->setGlobalFrameName(config_.global_frame_name);
 
   // Tracking.
-  tracking_visualizer_ = std::make_unique<TrackingVisualizer>(
-      config_utilities::getConfigFromRos<TrackingVisualizer::Config>(
+  tracking_visualizer_ = std::make_unique<SpatialTrackingVisualizer>(
+      config_utilities::getConfigFromRos<SpatialTrackingVisualizer::Config>(
           defaultNh("vis_tracking")));
   tracking_visualizer_->registerIDTracker(id_tracker_.get());
 
@@ -151,6 +184,7 @@ void PanopticMapper::setupMembers() {
     requested_inputs.insert(input_data_user->getRequiredInputs().begin(),
                             input_data_user->getRequiredInputs().end());
   }
+
   compute_vertex_map_ =
       requested_inputs.find(InputData::InputType::kVertexMap) !=
       requested_inputs.end();
@@ -194,7 +228,8 @@ void PanopticMapper::setupRos() {
       "print_timings", &PanopticMapper::printTimingsCallback, this);
   finish_mapping_srv_ = nh_private_.advertiseService(
       "finish_mapping", &PanopticMapper::finishMappingCallback, this);
-
+  save_mesh_srv_ = nh_private_.advertiseService(
+      "save_mesh", &PanopticMapper::saveMeshCallback, this);
   // Timers.
   if (config_.visualization_interval > 0.0) {
     visualization_timer_ = nh_private_.createTimer(
@@ -233,35 +268,91 @@ void PanopticMapper::inputCallback(const ros::TimerEvent&) {
       LOG_IF(INFO, config_.verbosity >= 1)
           << "No more frames received for 3 seconds, shutting down.";
       finishMapping();
-      if (!config_.save_map_path_when_finished.empty()) {
-        saveMap(config_.save_map_path_when_finished);
+      if (config_.visualization_interval < 0.f) {
+        Timer vis_timer("input/visualization");
+        publishVisualizationCallback(ros::TimerEvent());
       }
-      LOG_IF(INFO, config_.verbosity >= 1) << "Finished.";
+      LOG_IF(INFO, config_.verbosity >= 1) << "Finished at the end";
       ros::shutdown();
     }
+  }
+}
+
+bool PanopticMapper::create_directory_if_not_exists(
+    const std::string& folder_path) {
+  // Check if the folder exists
+  if (!std::filesystem::exists(folder_path)) {
+    // If it doesn't exist, try to create it recursively
+    if (std::filesystem::create_directories(folder_path)) {
+      std::cout << "Folder created: " << folder_path << std::endl;
+      return true;
+    } else {
+      std::cerr << "Error creating folder: " << folder_path << std::endl;
+      return false;
+    }
+  } else {
+    // If it exists, return true
+    std::cout << "Folder already exists: " << folder_path << std::endl;
+    return true;
   }
 }
 
 void PanopticMapper::processInput(InputData* input) {
   CHECK_NOTNULL(input);
   Timer timer("input");
-  frame_timer_ = std::make_unique<Timer>("frame");
+  // frame_timer_ = std::make_unique<Timer>("frame");
 
-  // Compute and store the validity image.
-  if (compute_validity_image_) {
-    Timer validity_timer("input/compute_validity_image");
-    input->setValidityImage(
-        globals_->camera()->computeValidityImage(input->depthImage()));
+  {
+    std::unique_lock<std::mutex> lock(frame_count_mutex_);
+    frame_count_++;
+    lock.unlock();
   }
 
-  // Compute and store the vertex map.
-  if (compute_vertex_map_) {
-    Timer vertex_timer("input/compute_vertex_map");
-    input->setVertexMap(
-        globals_->camera()->computeVertexMap(input->depthImage()));
-  }
-  ros::WallTime t0 = ros::WallTime::now();
+  input->setColorImage(input->rawImage());
 
+  // generate the points3d data structure either from the rgbd or from the
+  // lidar-camera setting up
+  Colors colors;
+  Labels labels;
+  Pointcloud points;
+  cv::Mat depth_img;
+  if (globals_->points3d()->getConfig().sensor_setup == "rgbd") {
+    globals_->points3d()->convert2Points3d(
+        input->depthImage(), input->colorImage(), globals_->camera(),
+        input->idImage(), &points, &colors, &labels);
+
+  } else if (globals_->points3d()->getConfig().sensor_setup ==
+                 "kitti_lidar_camera" ||
+             globals_->points3d()->getConfig().sensor_setup == "kitti_lidar") {
+    globals_->points3d()->convert2Points3d(
+        input->lidarPoints(), input->colorImage(), globals_->camera(),
+        input->idImage(), input->kittiLabels(), &points, &colors, &labels,
+        &depth_img);
+  }
+
+  input->setPoints(points);
+  input->setColors(colors);
+  input->setLabels(labels);
+
+  if (config_.generate_gt_merged_ply) {
+    const Transformation T_M_C = input->T_M_C();
+    for (int i = 0; i < input->points().size(); ++i) {
+      // Transform the point to the map frame (T_M_C * p_C = p_M).
+      const Point point_i_M = T_M_C * input->points()[i];
+      ColorLidarPoint pt_rgb;
+      pt_rgb.x = point_i_M(0, 0);
+      pt_rgb.y = point_i_M(1, 0);
+      pt_rgb.z = point_i_M(2, 0);
+      pt_rgb.r = input->colors()[i].r;
+      pt_rgb.g = input->colors()[i].g;
+      pt_rgb.b = input->colors()[i].b;
+      merged_cloud_ptr->push_back(pt_rgb);
+    }
+    return;
+  }
+
+
+  std::unique_lock<std::mutex> label_lock(label_voxel_mutex_);
   // Track the segmentation images and allocate new submaps.
   Timer id_timer("input/id_tracking");
   id_tracker_->processInput(submaps_.get(), input);
@@ -280,52 +371,56 @@ void PanopticMapper::processInput(InputData* input) {
   ros::WallTime t3 = ros::WallTime::now();
   management_timer.Stop();
 
+  if (request_finish_mapping_) {
+    finishMapping();
+  }
+
   // If requested perform visualization and logging.
   if (config_.visualization_interval < 0.f) {
     Timer vis_timer("input/visualization");
     publishVisualizationCallback(ros::TimerEvent());
   }
-  if (config_.data_logging_interval < 0.f) {
-    dataLoggingCallback(ros::TimerEvent());
-  }
-  ros::WallTime t4 = ros::WallTime::now();
+  label_lock.unlock();
 
-  // If requested update the thread_safe_submaps.
-  if (config_.use_threadsafe_submap_collection) {
-    thread_safe_submaps_->update();
-  }
 
   // Logging.
   timer.Stop();
-  std::stringstream info;
-  info << "Processed input data.";
-  if (config_.verbosity >= 3) {
-    info << "\n(tracking: " << int((t1 - t0).toSec() * 1000)
-         << " + integration: " << int((t2 - t1).toSec() * 1000)
-         << " + management: " << int((t3 - t2).toSec() * 1000);
-    if (config_.visualization_interval <= 0.f) {
-      info << " + visual: " << int((t4 - t3).toSec() * 1000);
-    }
-    info << " = " << int((t4 - t0).toSec() * 1000) << ", frame: "
-         << static_cast<int>(
-                (ros::WallTime::now() - previous_frame_time_).toSec() * 1000)
-         << "ms)";
-  }
-  previous_frame_time_ = ros::WallTime::now();
-  LOG_IF(INFO, config_.verbosity >= 2) << info.str();
+
   LOG_IF(INFO, config_.print_timing_interval < 0.0) << "\n" << Timing::Print();
+  if (request_finish_mapping_) {
+    ros::shutdown();
+  }
 }
 
 void PanopticMapper::finishMapping() {
+  if (config_.generate_gt_merged_ply) {
+    std::cout<<"save merged ply file"<<std::endl;
+    std::cout<<"before filter merged ply size: "<<merged_cloud_ptr->size()<<std::endl;
+    pcl::VoxelGrid<pcl::PointXYZRGB> sor;
+    sor.setInputCloud(merged_cloud_ptr);
+    sor.setLeafSize(0.01f, 0.01f, 0.01f);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_filtered(
+        new pcl::PointCloud<pcl::PointXYZRGB>);
+    sor.filter(*cloud_filtered);
+    pcl::io::savePLYFileASCII(config_.merged_ply_file, *cloud_filtered);
+    std::cout << "successfully saved merged ply file: "
+              << config_.merged_ply_file << std::endl;
+  }
   map_manager_->finishMapping(submaps_.get());
+  // set the visualization mpode to vis inactive submaps since we deactive all
+  // submaps this can also help us to republish everything
+  SubmapVisualizer::VisualizationMode visualization_mode =
+      SubmapVisualizer::visualizationModeFromString("inactive");
+  submap_visualizer_->setVisualizationMode(visualization_mode);
   submap_visualizer_->visualizeAll(submaps_.get());
-  LOG_IF(INFO, config_.verbosity >= 2) << "Finished mapping.";
+  saveMesh(config_.save_mesh_folder_path);
+  LOG_IF(INFO, config_.verbosity >= 1) << "Finished mapping.";
 }
 
 void PanopticMapper::publishVisualization() {
-  Timer timer("visualization");
+
   submap_visualizer_->visualizeAll(submaps_.get());
-  planning_visualizer_->visualizeAll();
+
 }
 
 bool PanopticMapper::saveMap(const std::string& file_path) {
@@ -380,6 +475,37 @@ bool PanopticMapper::loadMap(const std::string& file_path) {
   LOG_IF(INFO, config_.verbosity >= 1)
       << "Successfully loaded " << submaps_->size() << " submaps.";
   return true;
+}
+
+bool PanopticMapper::saveMesh(const std::string& folder_path) {
+  std::vector<int> suc_ids;
+  bool success = submaps_->saveMeshToFile(folder_path, suc_ids);
+  LOG_IF(INFO, success) << "Successfully saved " << submaps_->size()
+                        << " submaps mesh to folder '" << folder_path << "'.";
+  std::cout << "we successfully saved submaps: " << std::endl;
+  for (auto id : suc_ids) {
+    std::cout << id << " , ";
+  }
+
+  // save the submap info to a txt file
+  // Set output file path
+  std::string outputFilePath = config_.submap_info_path;
+  // Create output directory and any missing parent directories
+  std::filesystem::create_directories(
+      std::filesystem::path(outputFilePath).parent_path());
+  // Open output file
+  std::ofstream outputFile(outputFilePath);
+
+  for (auto id : suc_ids) {
+    if (id == 0) continue;
+    Submap* submap = submaps_->getSubmapPtr(id);
+    // Write output to file
+    outputFile << submap->toStringNoCoutColoring() << std::endl;
+  }
+
+  // Close output file
+  outputFile.close();
+  return success;
 }
 
 void PanopticMapper::dataLoggingCallback(const ros::TimerEvent&) {
@@ -447,6 +573,13 @@ bool PanopticMapper::loadMapCallback(
   return response.success;
 }
 
+bool PanopticMapper::saveMeshCallback(
+    panoptic_mapping_msgs::SaveLoadMap::Request& request,
+    panoptic_mapping_msgs::SaveLoadMap::Response& response) {
+  response.success = saveMesh(request.file_path);
+  return response.success;
+}
+
 bool PanopticMapper::printTimingsCallback(std_srvs::Empty::Request& request,
                                           std_srvs::Empty::Response& response) {
   printTimings();
@@ -461,7 +594,9 @@ void PanopticMapper::printTimings() const { LOG(INFO) << Timing::Print(); }
 
 bool PanopticMapper::finishMappingCallback(
     std_srvs::Empty::Request& request, std_srvs::Empty::Response& response) {
-  finishMapping();
+  LOG(INFO) << "get finish mapping request";
+  request_finish_mapping_ = true;
+  // finishMapping();
   return true;
 }
 

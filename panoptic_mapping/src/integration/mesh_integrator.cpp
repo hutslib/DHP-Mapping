@@ -156,6 +156,7 @@ bool MeshIntegrator::updateMeshForBlock(
   }
 
   mesh->updated = true;
+  mesh->crf_updated = true;
   return true;
 }
 

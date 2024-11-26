@@ -44,7 +44,7 @@ class ProjectiveIDTracker : public IDTrackerBase {
     // False: Match any mask to the highest metric submap.
     bool use_class_data_for_matching = true;
 
-    // True: Compute masks by projecting the iso-surface points into the frame
+    // True: Compute masks by projecting the iso-surface poitns into the frame
     // and account for voxel size. False (experimental): look up each vertex of
     // the depth map in the submap.
     bool use_approximate_rendering = true;
@@ -74,6 +74,7 @@ class ProjectiveIDTracker : public IDTrackerBase {
   ~ProjectiveIDTracker() override = default;
 
   void processInput(SubmapCollection* submaps, InputData* input) override;
+  std::vector<int> getInstanceList() override {};
 
  protected:
   // Internal methods.

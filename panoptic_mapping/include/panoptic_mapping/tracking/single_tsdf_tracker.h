@@ -40,6 +40,7 @@ class SingleTSDFTracker : public IDTrackerBase {
   ~SingleTSDFTracker() override = default;
 
   void processInput(SubmapCollection* submaps, InputData* input) override;
+  std::vector<int> getInstanceList() override {};
 
  protected:
   // Setup utility.

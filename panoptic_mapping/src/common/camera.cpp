@@ -118,6 +118,24 @@ bool Camera::projectPointToImagePlane(const Point& p_C, float* u,
   return true;
 }
 
+bool Camera::projectKittiPointToImagePlane(
+    const Point& p_C, float* u, float* v,
+    Eigen::Matrix<float, 3, 3>& K_cam2) const {
+  LOG_IF(INFO, config_.verbosity>=5)<<"projectKittiPointToImagePlane";
+  CHECK_NOTNULL(u);
+  CHECK_NOTNULL(v);
+  Eigen::Vector3f cam2_point = K_cam2 * p_C;
+  *u = cam2_point(0) / cam2_point(2);
+  *v = cam2_point(1) / cam2_point(2);
+  if (std::ceil(*u) >= config_.width || std::floor(*u) < 0) {
+    return false;
+  }
+  if (std::ceil(*v) >= config_.height || std::floor(*v) < 0) {
+    return false;
+  }
+  return true;
+}
+
 bool Camera::projectPointToImagePlane(const Point& p_C, int* u, int* v) const {
   CHECK_NOTNULL(u);
   *u = std::round(p_C.x() * config_.fx / p_C.z() + config_.vx);
@@ -141,9 +159,10 @@ std::vector<int> Camera::findVisibleSubmapIDs(const SubmapCollection& submaps,
     if (!submap.isActive() && only_active_submaps) {
       continue;
     }
-    if (submap.getLabel() == PanopticLabel::kFreeSpace && !include_freespace) {
-      continue;
-    }
+    // if (submap.getLabel() == PanopticLabel::kFreeSpace && !include_freespace)
+    // {
+    //   continue;
+    // }
     if (!submapIsInViewFrustum(submap, T_M_C)) {
       continue;
     }

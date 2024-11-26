@@ -18,7 +18,7 @@ void SemanticSubmapAllocator::Config::checkParams() const {
 
 void SemanticSubmapAllocator::Config::setupParamsAndPrinting() {
   setupParam("verbosity", &verbosity);
-  setupParam("submap", &submap);
+  setupParam("submap", &submap, "submap");
   setupParam("small_instance_voxel_size", &small_instance_voxel_size);
   setupParam("medium_instance_voxel_size", &medium_instance_voxel_size);
   setupParam("large_instance_voxel_size", &large_instance_voxel_size);
@@ -73,6 +73,7 @@ Submap* SemanticSubmapAllocator::allocateSubmap(SubmapCollection* submaps,
   new_submap->setClassID(label.class_id);
   new_submap->setLabel(label.label);
   new_submap->setName(label.name);
+  new_submap->setInstanceID(label.segmentation_id);
   return new_submap;
 }
 

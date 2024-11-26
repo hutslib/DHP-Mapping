@@ -23,6 +23,8 @@ class MapRenderer {
 
     bool impaint_voxel_size = false;
 
+    int submap_color_discretization;
+
     Config() { setConfigName("MapRenderer"); }
 
    protected:

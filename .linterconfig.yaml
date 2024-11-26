@@ -15,4 +15,7 @@ block_commits: on
 #  - another_file.py
 #  - some/directory
 whitelist:
-  - panoptic_mapping/include/panoptic_mapping/3rd_party/csv.h
+  - panoptic_mappingg_msgs/*
+  - panoptic_mappingg_ros/*
+  - panoptic_mappingg_utils/*
+  - panoptic_mapping/*

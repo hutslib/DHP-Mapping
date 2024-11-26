@@ -25,6 +25,7 @@ class SubmapIDManager {
   // Interaction.
   int requestID();
   void releaseID(int id);
+  int getCurrent_id() { return current_id_; }
 
  private:
   // Currently submap IDs are assumed to be unique over the lifetime of a run.

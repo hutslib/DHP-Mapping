@@ -1,10 +1,22 @@
+/*
+ * @Author: thuaj@connect.ust.hk
+ * @Description: DHP-Mapping camera class. This part of code is heavily derived from panoptic_mapping.
+ * Copyright (c) 2024 by thuaj@connect.ust.hk, All Rights Reserved.
+ */
+
 #ifndef PANOPTIC_MAPPING_COMMON_CAMERA_H_
 #define PANOPTIC_MAPPING_COMMON_CAMERA_H_
 
+#include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
+#include <Eigen/Eigen>
+#include <opencv2/core/eigen.hpp>
 #include <opencv2/core/mat.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 #include "panoptic_mapping/3rd_party/config_utilities.hpp"
 #include "panoptic_mapping/common/common.h"
@@ -81,6 +93,10 @@ class Camera {
 
   // Projection.
   bool projectPointToImagePlane(const Point& p_C, float* u, float* v) const;
+
+  bool projectKittiPointToImagePlane(const Point& p_C, float* u,
+                                             float* v,
+                                             Eigen::Matrix<float, 3, 3>& K_cam2) const;
 
   bool projectPointToImagePlane(const Point& p_C, int* u, int* v) const;
 

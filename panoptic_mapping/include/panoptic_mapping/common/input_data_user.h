@@ -58,6 +58,13 @@ class InputDataUser {
    */
   void setRequiredInputs(const InputData::InputTypes& types);
 
+  /**
+   * @brief erase an input type from the set of required inputs.
+   *
+   * @param type Type of input to erase.
+   */
+  void eraseRequiredInput(InputData::InputType type);
+
  private:
   InputData::InputTypes required_inputs_;
 };

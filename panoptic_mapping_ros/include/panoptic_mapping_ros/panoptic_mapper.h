@@ -26,9 +26,10 @@
 
 #include "panoptic_mapping_ros/input/input_synchronizer.h"
 #include "panoptic_mapping_ros/visualization/planning_visualizer.h"
+#include "panoptic_mapping_ros/visualization/spatial_tracking_visualizer.h"
 #include "panoptic_mapping_ros/visualization/submap_visualizer.h"
-#include "panoptic_mapping_ros/visualization/tracking_visualizer.h"
 
+#include "densecrf.h"
 namespace panoptic_mapping {
 
 class PanopticMapper {
@@ -48,7 +49,6 @@ class PanopticMapper {
 
     // If true maintain and update the threadsafe submap collection for access.
     bool use_threadsafe_submap_collection = false;
-
     // Number of threads used for ROS spinning.
     int ros_spinner_threads = std::thread::hardware_concurrency();
 
@@ -76,6 +76,25 @@ class PanopticMapper {
     // If true, indicate the default values when printing component configs.
     bool indicate_default_values = true;
 
+    std::string label_info_print_path;
+
+    std::string save_mesh_folder_path;
+
+    std::string colormap_print_path;
+
+    std::string submap_info_path;
+
+    bool vis_colorized_pointcloud;
+    std::string vis_colorized_pointcloud_save_folder;
+    std::string results_folder;
+
+    bool generate_kimera_pointcloud = false;
+
+    bool generate_gt_merged_ply = false;
+
+    std::string merged_ply_file = "";
+    // sensor setup
+    // std::string sensor_setup = "rgbd";
     Config() { setConfigName("PanopticMapper"); }
 
    protected:
@@ -85,7 +104,9 @@ class PanopticMapper {
 
   // Construction.
   PanopticMapper(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
-  virtual ~PanopticMapper() = default;
+  // virtual ~PanopticMapper() = default;
+  ~PanopticMapper() { /*test_.join();*/
+  }
 
   // ROS callbacks.
   // Timers.
@@ -99,6 +120,9 @@ class PanopticMapper {
       panoptic_mapping_msgs::SaveLoadMap::Request& request,     // NOLINT
       panoptic_mapping_msgs::SaveLoadMap::Response& response);  // NOLINT
   bool loadMapCallback(
+      panoptic_mapping_msgs::SaveLoadMap::Request& request,     // NOLINT
+      panoptic_mapping_msgs::SaveLoadMap::Response& response);  // NOLINT
+  bool saveMeshCallback(
       panoptic_mapping_msgs::SaveLoadMap::Request& request,     // NOLINT
       panoptic_mapping_msgs::SaveLoadMap::Response& response);  // NOLINT
   bool setVisualizationModeCallback(
@@ -122,6 +146,7 @@ class PanopticMapper {
   // IO.
   bool saveMap(const std::string& file_path);
   bool loadMap(const std::string& file_path);
+  bool saveMesh(const std::string& file_path);
 
   // Utilities.
   // Print all timings (from voxblox::timing) to console.
@@ -141,6 +166,8 @@ class PanopticMapper {
   MapManagerBase* getMapManagerPtr() { return map_manager_.get(); }
   const Config& getConfig() const { return config_; }
 
+  bool create_directory_if_not_exists(const std::string& folder_path);
+
  private:
   // Setup.
   void setupMembers();
@@ -159,6 +186,9 @@ class PanopticMapper {
   ros::ServiceServer set_color_mode_srv_;
   ros::ServiceServer print_timings_srv_;
   ros::ServiceServer finish_mapping_srv_;
+  ros::ServiceServer save_mesh_srv_;
+
+  ros::ServiceServer dense_crf_srv_;
   ros::Timer visualization_timer_;
   ros::Timer data_logging_timer_;
   ros::Timer print_timing_timer_;
@@ -185,7 +215,7 @@ class PanopticMapper {
   // Visualization.
   std::unique_ptr<SubmapVisualizer> submap_visualizer_;
   std::unique_ptr<PlanningVisualizer> planning_visualizer_;
-  std::unique_ptr<TrackingVisualizer> tracking_visualizer_;
+  std::unique_ptr<SpatialTrackingVisualizer> tracking_visualizer_;
 
   // Which processing to perform.
   bool compute_vertex_map_ = false;
@@ -201,6 +231,14 @@ class PanopticMapper {
   static const std::map<std::string, std::pair<std::string, std::string>>
       default_names_and_types_;
   ros::NodeHandle defaultNh(const std::string& key) const;
+
+  int frame_count_ = 0;
+  std::mutex frame_count_mutex_;
+  std::mutex label_voxel_mutex_;
+  std::vector<int> total_instance_in_map_;
+
+  bool request_finish_mapping_ = false;
+  ColorLidarPointCloud::Ptr merged_cloud_ptr;
 };
 
 }  // namespace panoptic_mapping

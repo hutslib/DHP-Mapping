@@ -31,6 +31,7 @@ class GroundTruthIDTracker : public IDTrackerBase {
   ~GroundTruthIDTracker() override = default;
 
   void processInput(SubmapCollection* submaps, InputData* input) override;
+  std::vector<int> getInstanceList() override {};
 
  protected:
   /**

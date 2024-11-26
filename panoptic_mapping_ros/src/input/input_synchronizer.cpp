@@ -11,7 +11,10 @@
 #include <cv_bridge/cv_bridge.h>
 #include <minkindr_conversions/kindr_tf.h>
 #include <panoptic_mapping_msgs/DetectronLabels.h>
+#include <panoptic_mapping_msgs/KittiLabels.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/PointCloud2.h>
 
 #include "panoptic_mapping_ros/conversions/conversions.h"
 
@@ -19,10 +22,13 @@ namespace panoptic_mapping {
 
 const std::unordered_map<InputData::InputType, std::string>
     InputSynchronizer::kDefaultTopicNames_ = {
+        {InputData::InputType::kRawImage, "raw_image_in"},
+        {InputData::InputType::kLidarPoints, "lidar_in"},
         {InputData::InputType::kDepthImage, "depth_image_in"},
         {InputData::InputType::kColorImage, "color_image_in"},
         {InputData::InputType::kSegmentationImage, "segmentation_image_in"},
         {InputData::InputType::kDetectronLabels, "labels_in"},
+        {InputData::InputType::kKittiLabels, "kitti_labels_in"},
         {InputData::InputType::kUncertaintyImage, "uncertainty_image_in"}};
 
 void InputSynchronizer::Config::checkParams() const {
@@ -66,6 +72,40 @@ void InputSynchronizer::advertiseInputTopics() {
   subscribed_inputs_.clear();
   for (const InputData::InputType type : requested_inputs_) {
     switch (type) {
+      case InputData::InputType::kRawImage: {
+        using MsgT = sensor_msgs::ImageConstPtr;
+        addQueue<MsgT>(type, [](const MsgT& msg, InputSynchronizerData* data) {
+          const cv_bridge::CvImageConstPtr raw =
+              cv_bridge::toCvCopy(msg, "bgr8");
+          data->data->raw_image_ = raw->image;
+          const std::lock_guard<std::mutex> lock(data->write_mutex_);
+          data->data->contained_inputs_.insert(InputData::InputType::kRawImage);
+        });
+        subscribed_inputs_.insert(InputData::InputType::kRawImage);
+        break;
+      }
+      case InputData::InputType::kLidarPoints: {
+        using MsgT = sensor_msgs::PointCloud2;
+        addQueue<MsgT>(
+            type, [this](const MsgT& msg, InputSynchronizerData* data) {
+              pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(
+                  new pcl::PointCloud<pcl::PointXYZ>);
+              // new pcl::cloud from  sensormsg::cloud
+              pcl::fromROSMsg(msg, *cloud);
+              data->data->lidar_points_ = *cloud;
+              // NOTE(schmluk): If the sensor frame name is not set
+              // recover it from the depth image.
+              if (this->used_sensor_frame_name_.empty()) {
+                this->used_sensor_frame_name_ = msg.header.frame_id;
+              }
+
+              const std::lock_guard<std::mutex> lock(data->write_mutex_);
+              data->data->contained_inputs_.insert(
+                  InputData::InputType::kLidarPoints);
+            });
+        subscribed_inputs_.insert(InputData::InputType::kLidarPoints);
+        break;
+      }
       case InputData::InputType::kDepthImage: {
         using MsgT = sensor_msgs::ImageConstPtr;
         addQueue<MsgT>(
@@ -85,19 +125,6 @@ void InputSynchronizer::advertiseInputTopics() {
                   InputData::InputType::kDepthImage);
             });
         subscribed_inputs_.insert(InputData::InputType::kDepthImage);
-        break;
-      }
-      case InputData::InputType::kColorImage: {
-        using MsgT = sensor_msgs::ImageConstPtr;
-        addQueue<MsgT>(type, [](const MsgT& msg, InputSynchronizerData* data) {
-          const cv_bridge::CvImageConstPtr color =
-              cv_bridge::toCvCopy(msg, "bgr8");
-          data->data->color_image_ = color->image;
-          const std::lock_guard<std::mutex> lock(data->write_mutex_);
-          data->data->contained_inputs_.insert(
-              InputData::InputType::kColorImage);
-        });
-        subscribed_inputs_.insert(InputData::InputType::kColorImage);
         break;
       }
       case InputData::InputType::kSegmentationImage: {
@@ -122,6 +149,18 @@ void InputSynchronizer::advertiseInputTopics() {
               InputData::InputType::kDetectronLabels);
         });
         subscribed_inputs_.insert(InputData::InputType::kDetectronLabels);
+        break;
+      }
+      case InputData::InputType::kKittiLabels: {
+        using MsgT = panoptic_mapping_msgs::KittiLabels;
+        addQueue<MsgT>(type, [](const MsgT& msg, InputSynchronizerData* data) {
+          // TODO(thuaj): add ros message convert for kitti label
+          data->data->kitti_labels_ = kittiLabelsFromMsg(msg);
+          const std::lock_guard<std::mutex> lock(data->write_mutex_);
+          data->data->contained_inputs_.insert(
+              InputData::InputType::kKittiLabels);
+        });
+        subscribed_inputs_.insert(InputData::InputType::kKittiLabels);
         break;
       }
       case InputData::InputType::kUncertaintyImage: {

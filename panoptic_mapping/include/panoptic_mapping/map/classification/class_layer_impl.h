@@ -23,6 +23,7 @@ namespace panoptic_mapping {
 template <typename VoxelT>
 class ClassLayerImpl : public ClassLayer {
  public:
+
   explicit ClassLayerImpl<VoxelT>(voxblox::FloatingPoint voxel_size,
                                   size_t voxels_per_side)
       : layer_(voxel_size, voxels_per_side) {}
@@ -81,7 +82,6 @@ class ClassLayerImpl : public ClassLayer {
   size_t voxels_per_side() const override { return layer_.voxels_per_side(); }
   FloatingPoint voxel_size() const override { return layer_.voxel_size(); }
   FloatingPoint block_size() const override { return layer_.block_size(); }
-
   // Serialization.
   bool saveBlockToStream(BlockIndex block_index,
                          std::fstream* outfile_ptr) const override {
@@ -172,6 +172,10 @@ class ClassLayerImpl : public ClassLayer {
   const ClassVoxel* getVoxelPtrByCoordinates(
       const Point& coords) const override {
     return layer_.getVoxelPtrByCoordinates(coords);
+  }
+  ClassVoxel* getVoxelPtrByGlobalIndex(
+      const GlobalIndex& global_voxel_index) override {
+    return layer_.getVoxelPtrByGlobalIndex(global_voxel_index);
   }
 
   // Exposes the layer block if the type is known.

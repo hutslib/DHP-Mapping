@@ -67,6 +67,8 @@ class ClassLayer {
   virtual ClassVoxel* getVoxelPtrByCoordinates(const Point& coords) = 0;
   virtual const ClassVoxel* getVoxelPtrByCoordinates(
       const Point& coords) const = 0;
+  virtual ClassVoxel* getVoxelPtrByGlobalIndex(
+      const GlobalIndex& global_voxel_index) = 0;
 };
 
 }  // namespace panoptic_mapping
