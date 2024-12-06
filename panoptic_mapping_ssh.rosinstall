@@ -38,9 +38,8 @@
 
 # Package Dependencies. Notice that voxblox requires a special branch.
 - git:
-    local-name: voxblox
-    uri: git@github.com:ethz-asl/voxblox.git
-    version: 'devel/panoptic_mapping'
-- git:
     local-name: cblox
     uri: git@github.com:ethz-asl/cblox.git
+- git:
+    local-name: yaml_cpp_catkin
+    uri: git@github.com:ethz-asl/yaml_cpp_catkin.git

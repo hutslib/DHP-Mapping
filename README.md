@@ -4,7 +4,7 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2403.16880-b31b1b?logo=arxiv&logoColor=white)](https://arxiv.org/abs/2403.16880)
 [![video](https://img.shields.io/badge/video-YouTube-FF0000?logo=youtube&logoColor=white)](https://youtu.be/F1NCSWK26I8)
 [![githubpage](https://img.shields.io/badge/Website-DHPMapping-blue)](https://hutslib.github.io/DHP-Mapping/)
-[![poster](https://img.shields.io/badge/IROS2024|Poster-6495ed?style=flat&logo=Shotcut&logoColor=wihte)](https://hkustconnect-my.sharepoint.com/:b:/g/personal/thuaj_connect_ust_hk/ESZvkPJNLNhJgKkzg-YgRg0BE7kvqr6TG9x7gPKziITIGQ?e=JkErLB) 
+[![poster](https://img.shields.io/badge/IROS2024|Poster-6495ed?style=flat&logo=Shotcut&logoColor=wihte)](https://hkustconnect-my.sharepoint.com/:b:/g/personal/thuaj_connect_ust_hk/ESZvkPJNLNhJgKkzg-YgRg0BE7kvqr6TG9x7gPKziITIGQ?e=JkErLB)
 ---
 📜 **26/03/2024** arXiv version [paper](https://arxiv.org/abs/2403.16880)
 
@@ -26,7 +26,7 @@ mkdir -p DHP_ws/src
 cd DHP_ws/src
 git clone git@github.com:hutslib/DHP-mapping.git
 wstool init . ./DHP_Mapping/panoptic_mapping_ssh.rosinstall    # SSH
-cd ./DHP_Mapping
+cd ..
 catkin init
 catkin config --extend /opt/ros/noetic
 catkin config --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
