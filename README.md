@@ -25,7 +25,7 @@
 mkdir -p DHP_ws/src
 cd DHP_ws/src
 git clone git@github.com:hutslib/DHP-mapping.git
-wstool init . ./DHP_Mapping/panoptic_mapping_ssh.rosinstall    # SSH
+wstool init . ./DHP-mapping/panoptic_mapping_ssh.rosinstall    # SSH
 cd ..
 catkin init
 catkin config --extend /opt/ros/noetic
