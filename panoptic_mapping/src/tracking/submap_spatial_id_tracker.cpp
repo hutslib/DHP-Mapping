@@ -166,7 +166,7 @@ void SubmapSpatialIDTracker::GenerateSegmentationPointCloud(
       pt_rgb.z = point_i_M(2, 0);
       pt_rgb.r = segment.colors()[i].r;
       pt_rgb.g = segment.colors()[i].g;
-      pt_rgb.b = segment.colors()[i].b;      
+      pt_rgb.b = segment.colors()[i].b;
       cloud_ptr->push_back(pt_rgb);
     }
   }
@@ -284,17 +284,17 @@ void SubmapSpatialIDTracker::processInput(SubmapCollection* submaps,
                 << std::endl;
     }
     for (int i = 0; i < input->labels().size(); i++) {
-      auto cur_label = kitti_labels_.find(input->labels()[i].id_label_);
+      auto cur_label = kitti_labels_.find(input->labels()[i].ins_label_);
       if (cur_label == kitti_labels_.end())  // not found, add new entry
       {
         LabelEntry new_label;
-        new_label.segmentation_id = input->labels()[i].id_label_;
+        new_label.segmentation_id = input->labels()[i].ins_label_;
         new_label.class_id = input->labels()[i].sem_label_;
 
         // only for semantic kitti dataset
         semanticKittiLabelLUT(input->labels()[i].sem_label_, new_label);
 
-        kitti_labels_[input->labels()[i].id_label_] = new_label;
+        kitti_labels_[input->labels()[i].ins_label_] = new_label;
       }
     }
     if (config_.verbosity >= 4) {
@@ -706,7 +706,7 @@ void SubmapSpatialIDTracker::CreateGtNewSubmap(SubmapCollection* submaps,
   //   int input_ins_label;
   //   if (config_.use_kitti) {
   //     std::cout<<"######"<<std::endl;
-  //     input_ins_label = input->labels()[i].id_label_;
+  //     input_ins_label = input->labels()[i].ins_label_;
   //   } else {
   //     input_ins_label = input->labels()[i].ins_label_;
   //   }
@@ -746,7 +746,7 @@ void SubmapSpatialIDTracker::CreateGtNewSubmap(SubmapCollection* submaps,
           std::cout << phrased_input_label.toString() << std::endl;
         }
       }
-    } 
+    }
     // step3 set the allocate size
     int min_allocation_size = 100;
     switch (phrased_input_label.label) {
@@ -786,7 +786,7 @@ void SubmapSpatialIDTracker::CreateGtNewSubmap(SubmapCollection* submaps,
       // create a new submap
       bool allocate_new_submap = tracking_data.getNumberOfInputPixels(
                                        input_id) >= min_allocation_size;
-      if(!allocate_new_submap) continue;  
+      if (!allocate_new_submap) continue;
       if (config_.verbosity >= 4) {
         std::cout << "we create new submap for input ins id: "
                   << input_id << std::endl;
@@ -809,13 +809,13 @@ void SubmapSpatialIDTracker::CreateGtNewSubmap(SubmapCollection* submaps,
     } else {
     int map_id = input_it->second.submap_info_->getID();
     submaps->getSubmapPtr(map_id)->setWasTracked(true);
-    } 
-  } 
+    }
+  }
   for (int i = 0; i < input->points().size(); ++i) {
     // std::cout<<"generate segments"<<std::endl;
     int input_ins_label;
     if (config_.use_kitti) {
-      input_ins_label = input->labels()[i].id_label_;
+      input_ins_label = input->labels()[i].ins_label_;
     } else {
       input_ins_label = input->labels()[i].ins_label_;
     }
@@ -829,7 +829,7 @@ void SubmapSpatialIDTracker::CreateGtNewSubmap(SubmapCollection* submaps,
         input_label = it->second;
         panoptic_id = static_cast<int>(input_label.label);
       }
-    } 
+    }
     // MatchInfo out_data = input_to_output_.at(input_ins_label);  // a MatchInfo
     auto out_it = input_to_output_.find(input_ins_label);
     if (out_it == input_to_output_.end()) {

@@ -1,0 +1,358 @@
+results_folder: "/results/flat/dhp/run1/02271600"
+generate_kimera_pointcloud: false
+# please spacific include all the param in the yaml file !!
+# General Params
+verbosity: 1 # default 2
+# Frame name used for the global frame (often mission, world, or odom)
+global_frame_name: world # default mission
+# How frequently to perform tasks. Execution period in seconds. Use -1 for
+# every frame, 0 for never.
+visualization_interval: -1.0 # default -1.f
+data_logging_interval: -1.0 # default 0.f
+print_timing_interval: -1 # default 0.f
+# If true maintain and update the threadsafe submap collection for access.
+use_threadsafe_submap_collection: true # default false
+ros_spinning_threads: 8 # default std::thread::hardware_concurrency();
+# Frequency in seconds in which the input queue is queried.
+check_input_interval: 0.01 # default 0.01f
+# If true loaded submaps change states are set to unknown, otherwise to
+# persistent.
+load_submaps_conservative: true # default true (not use in this task)
+# If true, keeps the active freespace ID as set in the loaded map
+loaded_freespace_stays_active: false # default false (not use in this task)
+# use_transform_caching: true (not use param )
+# If true, finish mapping and shutdown the panoptic mapper when no frames
+# are received for 3 seconds after the first frame was received.
+shutdown_when_finished: true # default false
+# Set this string to automatically save the map to the specified file when
+# shutting down when finished.
+save_map_path_when_finished: "/results/flat/dhp/run1/02271600/flat_detectron.panmap" # default: ""
+# If true, display units when printing the component configs.
+display_config_units: true # default true
+# If true, indicate the default values when printing component configs
+indicate_default_values: true # default true
+label_info_print_path: "/results/flat/dhp/run1/02271600/label_info.txt"
+# InputSynchronizer
+# Number of data points per type stored
+max_input_queue_length: 1000 # default 10
+# Empty (default) take the frame of the depth message header.
+sensor_frame_name: "" # default ""
+# unit (s), Maximum time to wait for transforms.
+transform_lookup_time: 0.1 # default 0.1f
+# unit (s), Maximum delay between Image messages that should be synced
+max_delay: 0.0 # default 0.0
+save_mesh_folder_path: "/results/flat/dhp/run1/02271600"
+submap_info_path: "/results/flat/dhp/run1/02271600/submapinfo.txt"
+camera:
+  verbosity: 1 # default 0
+  # Camera Intrinsics in pixels.
+  width: 640  # Px default 640
+  height: 480 # default 480
+  vx: 320 # default 320.f
+  vy: 240 # default 240.f
+  fx: 320 # default 320.f
+  fy: 320 # default 320.f
+  # Maximum range (ray-length) in meters.
+  max_range: &max_range 5  # m default 5.f
+  #  Minimum range (ray-length) in meters.
+  min_range: &min_range 0.1 # m default 0.1f
+  # distortion model select from none plumb_bob none means no need to undistorted the image
+  distortion_model: none # default none
+  # k1, k2, p1, p2, k3 distortion parameter
+  D: [0, 0, 0, 0]
+
+points3d:
+  verbosity: 1 # default 0
+  # extrinsic to transformation points in lidar frame to camera frame
+  # q.w q.x q.y q.z
+  Vqcamera_lidar: [1, 0, 0, 0]
+  # tx ty tz
+  Vtcamera_lidar: [0, 0, 0]
+  # set the sensor setup to generate points3d for the mapping pipeline
+  sensor_setup: rgbd # default rbgd
+  min_ray_length_m: &min_ray_length_m 0.1 # point.norm() default 0.1f
+  max_ray_length_m: &max_ray_length_m 5.0 # default 15.f
+
+# if type not set, then we use the "null" implementation
+labels:
+  type: csv # use csv label handler (null csv)
+  verbosity: 1 # default 4
+  # additional param for csv label handler ==
+  # File name to read the labels from.
+  file_name: "/dataset/flat/flat_dataset/detectron_labels.csv"
+  # additional param for range label handler ==
+  # === since we do not use this for this implementation comment it ===
+  # # Number of labels, initialises labels in range [0, num_labels - 1]
+  # num_labels:
+  # === end comment for range label handler ===
+
+# if type not set, then we use the "null" implementation
+submap_allocator:
+  type: semantic  # (null semantic)
+  verbosity: 1 # default 4
+  # additional param for semantic submap allocator ==
+  submap:
+    # Submap Class Config
+    # All values for the submap config except the voxel sizes and truncation
+    # distance, these are individually set below.
+    # Size of the truncation band for TSDF in meters. Negative values indicate
+    # multiples of the voxel size.
+    truncation_distance: &truncation_distance -2 # negative = #vs truncation_distance *= -voxel_size; default -2
+    # Numbers of voxels per side of a voxel block. Needs to be a power of 2.
+    voxels_per_side: &voxels_per_side 16  # default 16
+    # Config of the classification voxels to be used. Leave the config
+    # uninitialized (not setting the 'type' param) can be used to not use any
+    # classification.
+    classification:
+      type: variable_count
+    # Config of the score voxels to be used. Leave the config
+    # uninitialized (not setting the 'type' param) can be used to not use any
+    # score integration.
+    scores:
+      type: average
+    # Config of the mesh integrator.
+    mesh:
+      # Whether to use color information from the TSDF.
+      use_color: true # default true
+      # Minimum TSDF weight required to mesh a voxel.
+      min_weight: 0.000001 # default 1e-6
+      # If classification is used, how many of the corners of a mesh cube need to
+      # labeled as belonging to the submap to still be meshed. Values are [0-8].
+      # A voxel is be regarded as valid only when $required_belonging_corners of 8 corners are belonging to the submap's id
+      required_belonging_corners: 1 # default 4
+      # Number of threads used to mesh a layer in parallel.
+      integrator_threads: 8 # default std::thread::hardware_concurrency()
+      # If true, voxels not belonging to this submap will be set to the
+      # truncation distance.
+      # if true: close the mesh of each submap by assign the foreign voxel corners the truncated distance
+      clear_foreign_voxels: false # default false
+  # Voxel size for each label in meters.
+  small_instance_voxel_size: 0.03 # default 0.03
+  medium_instance_voxel_size: 0.03 # default 0.05
+  large_instance_voxel_size: 0.03 # default 0.07
+  background_voxel_size: &background_voxel_size 0.03 # default 0.1
+  unknown_voxel_size: &unknow_voxel_size 0.03 # default 0.1
+  # Truncation distance for all labels in meters. This overwrites the
+  # submap. Negative values are multiples of the voxel size.
+  truncation_distance: *truncation_distance
+
+# if type not set, then we use the "null" implementation
+freespace_allocator:
+  type: monolithic  # (monolithic)
+  verbosity: 1  # default 4
+  submap:
+    verbosity: 1 # default 1
+    voxel_size: 0.3 # default 0.1
+    # Size of the truncation band for TSDF in meters. Negative values indicate
+    # multiples of the voxel size.
+    truncation_distance: -2
+    # Numbers of voxels per side of a voxel block. Needs to be a power of 2.
+    voxels_per_side: *voxels_per_side
+    mesh:
+      # Whether to use color information from the TSDF.
+      use_color: true # default true
+      # Minimum TSDF weight required to mesh a voxel.
+      min_weight: 0.000001 # default 1e-6
+      # If classification is used, how many of the corners of a mesh cube need to
+      # labeled as belonging to the submap to still be meshed. Values are [0-8].
+      # A voxel is be regarded as valid only when $required_belonging_corners of 8 corners are belonging to the submap's id
+      required_belonging_corners: 1 # default 4
+      # Number of threads used to mesh a layer in parallel.
+      # integrator_threads: 8 # default std::thread::hardware_concurrency()
+      # If true, voxels not belonging to this submap will be set to the
+      # truncation distance.
+      # if true: close the mesh of each submap by assign the foreign voxel corners the truncated distance
+      clear_foreign_voxels: false # default false id_tracker:
+id_tracker:
+  type: submap_spatial # ground_truth, projective, detectron, single_tsdf, spatial, submap_spatial, submap_spatial_gt
+  verbosity: 1 # default 4
+
+  # additional param SubmapSpatialIDTracker ==
+  # Which tracking metric to compute. Supported are 'IoU' and 'overlap'.
+  tracking_metric: "IoU" # default "IoU"
+  # Accept matches that have at least this value in the computed trackign
+  # metric.
+  match_acceptance_threshold: 0.12 # default: 0.12
+  # True: Only match submaps and masks that have identical class labels.
+  # False: Match any mask to the highest metric submap.
+  use_class_data_for_matching: false # default true
+  # Only allocate new submaps for masks that have at least this many pixels.
+  min_allocation_size_background: 1000 # px. larger than allow submap allocation, default 0
+  min_allocation_size_small: 100 # px. larger than allow submap allocation, default 0
+  min_allocation_size_middle: 200 # px. larger than allow submap allocation, default 0
+  min_allocation_size_large: 1000 # px. larger than allow submap allocation, default 0
+  # Number of threads to use to track submaps in parallel.
+  # rendering_threads: 8 # default: std::thread::hardware_concurrency();
+  # whether use detectron labels
+  use_detectron: &use_detectron  true # default: true
+  use_kitti: &use_kitti false
+  # Count iso-surfaces points as valid whose distance(abs(sdf)) value is within this
+  # distance in meters of the measured depth. Negative values indicate
+  # multiples of the voxel size.
+  depth_tolerance: -1  # m, negative = #vs
+  # the parametr for the init create submap for unmatch voxel
+  only_active_submaps: false
+  generate_gt_maps: false
+  submap:
+    # Size of one voxel in meters.
+    voxel_size: *unknow_voxel_size
+    # Size of the truncation band for TSDF in meters. Negative values indicate
+    # multiples of the voxel size.
+    truncation_distance: *truncation_distance # negative = #vs truncation_distance *= -voxel_size; default -2
+    # Numbers of voxels per side of a voxel block. Needs to be a power of 2.
+    voxels_per_side: *voxels_per_side  # default 16
+    # note(thuaj): do not use classification and score for submap which store unmatched data
+    # Config of the classification voxels to be used. Leave the config
+    # uninitialized (not setting the 'type' param) can be used to not use any
+    # classification.
+    classification:
+      type: variable_count
+      # Config of the score voxels to be used. Leave the config
+      # uninitialized (not setting the 'type' param) can be used to not use any
+      # score integration.
+    scores:
+      type: average
+    mesh:
+      # Whether to use color information from the TSDF.
+      use_color: true # default true
+      # Minimum TSDF weight required to mesh a voxel.
+      min_weight: 0.0000012 # default 1e-6
+      # If classification is used, how many of the corners of a mesh cube need to
+      # labeled as belonging to the submap to still be meshed. Values are [0-8].
+      # A voxel is be regarded as valid only when $required_belonging_corners of 8 corners are belonging to the submap's id
+      required_belonging_corners: 1 # default 4
+      # Number of threads used to mesh a layer in parallel.
+      integrator_threads: 8 # default std::thread::hardware_concurrency()
+      # If true, voxels not belonging to this submap will be set to the
+      # truncation distance.
+      # if true: close the mesh of each submap by assign the foreign voxel corners the truncated distance
+      clear_foreign_voxels: false # default false
+
+tsdf_integrator:
+  type: raytracing_tsdf # projective, class_projective, single_tsdf, global_tsdf
+  verbosity: &tsdf_integrator_verbosity 1
+
+  # Projective
+  use_weight_dropoff: true
+  max_weight: 10000
+  interpolation_method: adaptive  # nearest, bilinear, adaptive
+  foreign_rays_clear: true
+  allocate_neighboring_blocks: true
+  # voxel_size: *background_voxel_size
+
+  # Class Projective
+  use_binary_classification: true
+  use_instance_classification: &use_instance_classification false
+  update_only_tracked_submaps: true
+  global_voxblox_integrator:
+    verbosity: *tsdf_integrator_verbosity
+    min_ray_length_m: *min_ray_length_m
+    max_ray_length_m: *max_ray_length_m
+    enable_anti_grazing: true
+    integration_threads: 1
+    truncation_distance: *truncation_distance
+    label_truncation_distance: -2
+    skip_update_label_faraway_surface: false
+    voxel_carving_enabled: false # space carving is mainly used for getting rid of the dynamic artifacts with the cost of longer consuming time
+    use_detectron: *use_detectron
+    use_kitti: *use_kitti
+    instance_weight: 1.0
+    background_weight: 1.0
+    submap_color_discretization: &submap_color_discretization 30
+
+# comment since we do not implement till this part
+map_management:
+  type: submaps
+  verbosity: 1
+
+  # Frequencies
+  prune_active_blocks_frequency: 0
+  activity_management_frequency: 1
+  change_detection_frequency: 0
+  voxel_class_management_frequency: 85
+  # crf_frequency: 17
+  excute_crf: true
+  submap_color_discretization: *submap_color_discretization
+  # Behavior
+  merge_deactivated_submaps_if_possible: false
+  apply_class_layer_when_deactivating_submaps: false
+
+  activity_manager:
+    required_reobservations: 3 # Consecutive observations to keep new submaps.
+    deactivate_after_missed_detections: 3  # Deactivate submaps when not observed for x frames.
+
+  tsdf_registrator:
+    verbosity: 1
+    min_voxel_weight: 0.000001
+    error_threshold: -0.1 # m, negative = #vs
+    match_rejection_points: 20
+    match_rejection_percentage: 0.02
+    match_acceptance_points: 20
+    match_acceptance_percentage: 0.02
+    normalize_by_voxel_weight: true
+    submap_color_discretization: *submap_color_discretization
+
+  layer_manipulator:
+      verbosity: 4
+      use_instance_classification: *use_instance_classification
+
+  use_detectron: *use_detectron
+  use_kitti: *use_kitti
+  semantic_size: &semantic_size 133 # for detectron class wo need to note that it is from 2
+  crf_iterations: 1 # default 5
+  use_high_order: false # default false
+  smooth_xy_stddev: 3 # default 3
+  smooth_z_stddev: 3 # default 3
+  smooth_weight: 0.2 # default 8
+  appear_xy_stddev: 160 # default 160
+  appear_z_stddev: 40 # default 40
+  appear_rgb_stddev: 1 # default 4
+  appear_weight: 1 # default 10
+  exit_after_management: false
+  crfmultithread: true
+  threads: 8
+
+visualization:
+  submaps:
+    type: submaps  # submaps, single_tsdf
+    verbosity: 1
+    # color, and additional mode for semantic tsdf visualizer
+    # ProbIns for voxel instance
+    # ProbSem, // for voxel semantic
+    # InstanceID, // for submap Instance ID
+    # SemanticID // for submap Semantic ID
+    # SubmapID
+    color_mode: submaps
+    # all, active, active_only, inactive, persistent
+    visualization_mode: active
+    submap_color_discretization: *submap_color_discretization
+    visualize_mesh: true
+    visualize_tsdf_blocks: true
+    visualize_free_space: true
+    visualize_bounding_volumes: true
+    include_free_space: false
+    mesh_min_weight: 0.000001
+    # additinal parameters for the SemanticTsdfVisualizer
+    # only generate updated mesh
+    only_updated_mesh: true # default: true
+    # generate mesh using class layer
+    use_class_layer: false # default: true
+    colormap_print_path: "/results/flat/dhp/run1/02271600"
+    semantic_size: *semantic_size
+  planning:
+    verbosity: 1
+    visualize_slice: true
+    slice_resolution: 0.1
+    slice_height: -0.5
+
+  tracking:
+    verbosity: 1
+    visualize_tracking: true
+
+
+# note
+# verbosity 1 for final vital print
+# verbosity 2 一些重要的節點輸出
+# verbosity 3 中間變量結果輸出和過程的輸出
+# verbosity 4 for debug
+# verbosity 5 save debug visualization files

@@ -1,0 +1,43 @@
+<launch>
+<!-- <param name="/use_sim_time" value="true"/> -->
+<!-- ============ Arguments ============ -->
+  <!-- General -->
+  <arg name="namespace" default="data"/>
+  <arg name="use_detectron" default="false"/>
+  <arg name="use_kitti_label" default="true"/>
+  <arg name="visualize" default="true"/>
+
+
+  <!-- Semantic Kitti Dataset args -->
+  <arg name="base_path" default="/dataset/KITTI/dataset/sequences/07"/>
+  <arg name="play_rate" default="1"/>  <!-- Realtime factor -->
+  <arg name="wait_time" default="0"/>  <!-- s -->
+  <arg name="max_frames" default="300"/> <!-- 90 -->
+
+  <!-- Mapper -->
+  <arg name="config" default="iros_exp/gt/iros_gt_kitti_detectron_07"/>
+  <arg name="shutdown_when_finished" default="true"/>
+
+
+<!-- ============ Run ============ -->
+  <!-- Play data -->
+  <include file="$(find panoptic_mapping_utils)/launch/play_kitti_lidar_label.launch" pass_all_args="true"/>
+  <!-- Mapper -->
+  <node name="panoptic_mapper" pkg="panoptic_mapping_ros" type="panoptic_mapper_node" required="$(arg shutdown_when_finished)" output="screen">
+    <param name="colorlogtostderr" value="true"/>
+    <!-- Config -->
+    <rosparam file="$(find panoptic_mapping_ros)/config/mapper/$(arg config).yaml"/>
+
+    <!-- Input -->
+    <remap from="raw_image_in" to="$(arg namespace)/color_image"/>
+    <!-- segmentation_image_in not using detectron type and labels in using detectron type -->
+    <remap from="segmentation_image_in" to="$(arg namespace)/segmentation_image"/>
+    <remap from="labels_in" to="$(arg namespace)/segmentation_labels"/>
+    <remap from="lidar_in" to="$(arg namespace)/lidar"/>
+    <remap from="kitti_labels_in" to="$(arg namespace)/kitti_labels" />
+  </node>
+
+  <!-- RVIZ Visualization-->
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find panoptic_mapping_ros)/config/rviz/devel.rviz"  if="$(arg visualize)"/>
+
+</launch>

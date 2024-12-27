@@ -1,0 +1,39 @@
+<launch>
+<!-- ============ Arguments ============ -->
+  <!-- General -->
+  <arg name="namespace" default="data"/>
+  <arg name="use_detectron" default="false"/>
+  <arg name="visualize" default="true"/>
+
+  <!-- Flat Dataset args -->
+  <arg name="base_path" default="/dataset/flat/flat_dataset/run1"/>
+  <arg name="play_rate" default="1"/>  <!-- Realtime factor -->
+  <arg name="wait_time" default="0"/>  <!-- s -->
+  <arg name="max_frames" default="1000"/> <!-- 90 -->
+
+  <!-- Mapper -->
+  <arg name="config" default="iros_exp/flat/iros_flat_gt_run1"/>
+  <arg name="shutdown_when_finished" default="true"/>
+
+
+<!-- ============ Run ============ -->
+  <!-- Play data -->
+  <include file="$(find panoptic_mapping_utils)/launch/play_flat_dataset.launch" pass_all_args="true"/>
+  <!-- Mapper -->
+  <node name="panoptic_mapper" pkg="panoptic_mapping_ros" type="panoptic_mapper_node" required="$(arg shutdown_when_finished)" output="screen">
+      <param name="colorlogtostderr" value="true"/>
+    <!-- Config -->
+    <rosparam file="$(find panoptic_mapping_ros)/config/mapper/$(arg config).yaml"/>
+
+    <!-- Input -->
+    <remap from="raw_image_in" to="$(arg namespace)/color_image"/>
+    <remap from="depth_image_in" to="$(arg namespace)/depth_image"/>
+    <!-- segmentation_image_in not using detectron type and labels in using detectron type -->
+    <remap from="segmentation_image_in" to="$(arg namespace)/segmentation_image"/>
+    <remap from="labels_in" to="$(arg namespace)/segmentation_labels"/>
+  </node>
+
+  <!-- RVIZ Visualization-->
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find panoptic_mapping_ros)/config/rviz/flat.rviz"  if="$(arg visualize)"/>
+
+</launch>

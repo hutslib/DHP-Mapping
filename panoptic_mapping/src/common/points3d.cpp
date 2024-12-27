@@ -1,7 +1,7 @@
 /*
  * @Author: thuaj@connect.ust.hk
  * @Date: 2022-12-13 16:57:22
- * @LastEditTime: 2024-11-26 19:15:43
+ * @LastEditTime: 2024-12-27 23:29:32
  * @Description: lidar class dataloader
  * Copyright (c) 2022 by thuaj@connect.ust.hk, All Rights Reserved.
  */
@@ -272,8 +272,7 @@ void Points3d::convert2Points3d(const LidarPointCloud& ptcloud,
           continue;
         }
         // directly get the label form semantickitti (for gt generation)
-        Label label(cur_label.sem_label, cur_label.ins_label,
-                    cur_label.id_label, 0.9, 0);
+        Label label(cur_label.sem_label, cur_label.id_label, 0.9, 0);
         // generate Points3d (in the lidar coordinate)
         points->push_back(point);
         colors->push_back(color);

@@ -111,8 +111,7 @@ void TrackingInfoAggregator::insertInputPoints3d(const Labels& labels,
                                                  const Pointcloud& points) {
   for (int i = 0; i < points.size(); ++i) {
     const Label k_label_i = labels[i];
-    incrementMap(&total_input_count_, k_label_i.id_label_);
-
+    incrementMap(&total_input_count_, k_label_i.ins_label_);
   }
 }
 
